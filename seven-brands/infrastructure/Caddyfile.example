@@ -1,15 +1,22 @@
-# Copy to infrastructure/Caddyfile and replace the domains. Caddy gets HTTPS certificates automatically.
-# Every brand domain points at the one storefront; the brand is chosen from the Host header, and the same
-# domains must be listed in admin → Brands (brand_domain), or the storefront answers 404.
+# Copy to infrastructure/Caddyfile and replace the addresses (see docs/STAGING_SETUP.md, step 4).
+# Caddy gets HTTPS certificates automatically. Every brand address points at the one storefront; the brand is chosen
+# from the Host header, and the same addresses must be listed in admin → Brands, or the storefront answers 404.
+# Free addresses without a domain: admin.203-0-113-5.sslip.io etc. (use your server's IP with dashes).
 
-admin.staging.example.com {
-	reverse_proxy admin:3100
+(staging_headers) {
 	header -Server
+	# Staging must never appear in search results.
+	header X-Robots-Tag "noindex, nofollow"
 }
 
-moodicons.staging.example.com, sonicglyphs.staging.example.com {
+admin.203-0-113-5.sslip.io {
+	import staging_headers
+	reverse_proxy admin:3100
+}
+
+moodicons.203-0-113-5.sslip.io, sonicglyphs.203-0-113-5.sslip.io {
+	import staging_headers
 	reverse_proxy storefront:3200 {
 		header_up X-Forwarded-Proto https
 	}
-	header -Server
 }

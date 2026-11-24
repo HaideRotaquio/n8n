@@ -21,9 +21,9 @@ The storefront is one deployment for every brand: point each brand domain at it 
 
 ## Staging (ready, not yet deployed)
 
-Prepared in Phase 4; it needs owner accounts and approval before anything is created. The quickest path is one small VPS running containers, with managed database and storage so the server keeps no customer data:
+Prepared in Phase 4; it needs owner accounts and approval before anything is created. **Full click-by-click guide: [STAGING_SETUP.md](STAGING_SETUP.md).** The quickest path is one small VPS running containers, with managed database and storage so the server keeps no customer data:
 
-1. Create: a Neon Postgres database, a private Cloudflare R2 bucket with an access key, a VPS (2 GB RAM is enough; Docker installed), and DNS records for `admin.<staging domain>` and one host per brand.
+1. Create: a Neon Postgres database (direct, non-pooled connection string — the worker uses LISTEN/NOTIFY), a private Cloudflare R2 bucket with an access key, a VPS (4 GB RAM recommended for building the images; Docker installed), and addresses for the admin and each brand (free `sslip.io` names or your own domain).
 2. Copy `.env.staging.example` to `.env.staging` on the server and fill it in. Payments stay in test mode (see `PAYMENTS_SETUP.md`).
 3. Copy `infrastructure/Caddyfile.example` to `infrastructure/Caddyfile` and put in the real domains. Add the same brand domains in admin → Brands.
 4. `docker compose -f infrastructure/docker-compose.staging.yml --env-file .env.staging run --rm migrate` (migrations + seed), then `... up -d`.
