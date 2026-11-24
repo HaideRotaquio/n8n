@@ -1,47 +1,66 @@
 # Production pipeline
 
-Status: **design** (implementation is Phase 2). Nothing here runs yet.
+Status: **implemented (Phase 2)**. Packages: `@sb/asset`, `@sb/audio`, `@sb/svg-engine`, `@sb/player`, `@sb/export`, `@sb/rigs`, `@sb/agents`, `services/worker`.
 
-## Canonical Asset Definition (AD)
+## Asset Definition v1 (AD)
 
-Every product is a versioned JSON document (`asset_version.definition`), validated by Zod. All formats are compiled from it. Example and field list: `PHASE_0_REPORT.md` §4.
+Every product is a versioned JSON document (`asset_version.definition`, immutable), validated by the Zod schema in `packages/asset/src/schema.ts`:
 
-## Stages
+| Part | Contents |
+|---|---|
+| `viewBox`, `layers` | Tree of groups and shapes (path, circle, ellipse, rect, line, polygon, polyline). Path data and points are validated character-by-character. |
+| `tokens` | Named `#RRGGBB` colors; layers reference them (`{ token: "primary" }`). Customers can change them. |
+| `timeline` | Duration, loop (forever / N / once), tracks (translate, rotate, scale, scaleX/Y, opacity) with keyframes and easing (linear, ease presets, cubic-bezier, physical springs), and named markers. |
+| `sounds` | Cues at a time or marker: `synth:<preset>` (procedural, owned) or `snd_…` (stored, licensed — Phase 3). |
+| `interactions` | load / hover / click / focus / inView → play, restart, toggle, playSound. |
+| `a11y` | Label and the still frame shown under reduced motion. |
+| `provenance` | `rig`, `ai-assisted`, `manual` or `fixture`. |
 
-| # | Stage | Actor | Output | Gate |
-|---|---|---|---|---|
-| 1 | Brief | Human or Creative Director agent | `ProductionBrief` (brand, theme, count, style refs) | — |
-| 2 | Concept | Creative Director agent | Concepts + AD skeletons | Schema valid |
-| 3 | Artwork | Rig generator (deterministic) or SVG agent | Layers | svg-engine: sanitize, optimize, validate |
-| 4 | Motion | Animation agent / rig presets | Timeline | Renders in Chromium without errors; loop seam check |
-| 5 | Sound | Synth presets, licensed library, (later) AI SFX | `sound_asset` + license record | Peak ≤ −1 dBFS, −16 LUFS, duration ≤ animation |
-| 6 | Sync | Sync agent / rules | Cue points | Cues align with timeline events ±1 frame |
-| 7 | QA | Automated checks | `quality_review` (score + checks) | Score ≥ threshold |
-| 8 | Catalog | Catalog agent | Title, description, tags, alt text | Schema + length + banned-claims check |
-| 9 | Export | export-engine (worker) | Artifacts + ZIP with LICENSE.txt + README | Each file decodes; size budgets |
-| 10 | **Human review** | Reviewer / brand manager | Approve / reject with notes | **Required** |
-| 11 | Publish | Publishing job | Product live on storefront | `asset.publish` permission + audit |
+One motion evaluator (`packages/asset/src/motion.ts`) drives every output, so all formats move identically.
 
-## Export matrix
+## Production methods
 
-| Format | Animation | Interactivity | Sound |
+| Method | How | Cost | Where |
 |---|---|---|---|
-| Animated SVG (CSS) | ✅ | hover only | ❌ |
-| Web Component | ✅ | ✅ | ✅ (after user gesture) |
-| React component | ✅ | ✅ | ✅ |
-| Lottie JSON | ✅ | host app | ❌ — companion audio + cue sheet |
-| GIF | ✅ (256 colors) | ❌ | ❌ |
-| PNG / sprite | static/frames | ❌ | ❌ |
-| MP4 (H.264 + AAC) | ✅, no transparency | ❌ | ✅ baked |
-| WebM (VP9 + alpha) | ✅ with transparency | ❌ | ✅ |
-| ZIP | all of the above + license | | |
+| **Rig** | Parametric generators: Moodicons face (9 expressions × 4 palettes), SonicGlyphs line glyphs (8 × 3) | $0 | `packages/rigs` |
+| **AI brief** | Creative director → SVG artist → importer (sanitize, repair once) → animator → QA (repair once) | ~$0.05–0.20 per asset (est.) | `packages/agents` |
+| **Import** | Untrusted SVG → allowlist importer → layers (UI upload planned) | $0 | `packages/svg-engine` |
 
-Product pages show this table so no format is oversold.
+## Job flow
 
-## Batch & collection runs
+```
+Admin "Production factory" ──enqueue──▶ production_job (status queued) ──NOTIFY daos_jobs──▶ worker
+worker: claim (FOR UPDATE SKIP LOCKED) → run → save version(s) + automated QA → succeeded / retry / failed
+asset: draft (QA failed) | in_review (QA passed) ──human review──▶ approved / rejected ──(Phase 3)──▶ published
+```
 
-A collection brief fans out into N asset jobs via pg-boss. LLM steps use the Batch API (50% cheaper) and cached brand style guides. Each job records cost; the run stops when the daily AI budget is reached.
+- Retries with backoff for transient errors; permanent errors (bad brief, missing AI config, budget reached, refusals) fail immediately.
+- Stale `running` jobs are re-queued after 15 minutes (worker crash).
+- Every AI call is recorded in `agent_task` and booked as an `expense`, even when it fails.
 
-## Versioning
+## Automated QA (`runQa`)
 
-`asset_version` rows are immutable. Edits create a new version; published products pin a version. Customers get updates within the same major version.
+Errors block approval: schema violations, unknown layers/tokens/markers/cues, duplicate tracks, keyframes after the end or out of order, opacity outside 0–1.
+Warnings lower the score (5 each): visible loop seams (ignores full-turn rotations and seams while transparent), springs not settled by the next keyframe, invisible/empty layers, unused tokens, sound without a user-gesture interaction, complexity over budget. Pass = no errors and score ≥ 70. All rig outputs score 100.
+
+## Exports (`@sb/export`)
+
+| Format | Motion | Interactive | Sound | Notes |
+|---|---|---|---|---|
+| SVG (static) | — | — | — | reduced-motion frame |
+| SVG (animated) | ✅ | hover variant | — | CSS keyframes sampled at 30 fps; springs baked |
+| PNG 64/256/512 | — | — | — | resvg, transparent |
+| GIF | ✅ | — | — | ffmpeg palette, 1-bit alpha, ~3 s of loops |
+| MP4 | ✅ | — | ✅ | H.264 yuv420p + AAC, white background |
+| WebM | ✅ | — | ✅ | VP9 with alpha + Opus |
+| WAV + cue sheet | — | — | ✅ | mixed, −16 LUFS, peak ≤ −1 dBFS |
+| Web Component | ✅ | ✅ | ✅ (after click) | `<daos-asset>`, 19 KB player |
+| React | ✅ | ✅ | ✅ | typed wrapper around the Web Component |
+| JSON | — | — | — | the definition itself |
+| ZIP | all of the above + README (capability table) + LICENSE (“not licensed” until sold) | | | |
+
+Export jobs store files under `brands/<brand>/assets/<asset>/v<n>/` and record `export_artifact` rows; downloads use 5-minute signed URLs.
+
+## Not yet built
+
+Lottie export, stored (non-synth) sounds, SVG upload UI, batch API for large AI collections, catalog/metadata agent (Phase 3).

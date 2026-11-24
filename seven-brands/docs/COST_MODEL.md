@@ -46,7 +46,8 @@ Domains ~$10–15/yr each (deferred, D6) · trademark searches · legal review o
 
 ## Controls
 
-- Daily/monthly AI caps enforced in code (Phase 2); jobs pause at the cap.
+- Daily/monthly AI caps enforced before every model call (`DAOS_AI_DAILY_BUDGET_USD`, default $5; `DAOS_AI_MONTHLY_BUDGET_USD`, default $50); jobs fail clearly at the cap.
 - Provider-side spend limits where offered (Anthropic console, Cloudflare).
-- `expense` table + admin Expenses page (Phase 2) for actuals vs. estimates.
+- `expense` table + admin Expenses page: AI costs booked automatically per call; owner records other costs.
+- Rig-based production costs $0 in AI.
 - No permanent GPUs.

@@ -4,7 +4,7 @@ import type { Permission } from "@sb/core";
  * The 16 dashboard sections from the blueprint. `phase` marks when a section is built;
  * sections with a phase later than the current one render an honest "not built yet" page.
  */
-export const CURRENT_PHASE = 1;
+export const CURRENT_PHASE = 2;
 
 export interface NavItem {
   href: string;
@@ -30,7 +30,7 @@ export const NAV: NavItem[] = [
   { href: "/licenses", label: "Licenses", permission: "license.read", phase: 3, description: "Issued licenses, verification and revocation." },
   { href: "/analytics", label: "Analytics", permission: "analytics.read", phase: 4, description: "Traffic, conversion and channel performance per brand." },
   { href: "/revenue", label: "Revenue", permission: "finance.read", phase: 3, description: "Gross, fees, tax and net revenue per brand." },
-  { href: "/expenses", label: "Expenses", permission: "finance.read", phase: 2, description: "AI, infrastructure, payment and marketing costs." },
+  { href: "/expenses", label: "Expenses", permission: "finance.read", phase: 2, description: "AI, infrastructure, payment and marketing costs.", scope: "global" },
   { href: "/infrastructure", label: "Infrastructure", permission: "infrastructure.read", phase: 1, description: "Service health and configuration checks.", scope: "global" },
   { href: "/team", label: "Team & roles", permission: "team.read", phase: 1, description: "Staff accounts and role assignments.", scope: "global" },
   { href: "/audit", label: "Audit log", permission: "audit.read", phase: 1, description: "Append-only record of administrative actions.", scope: "global" },

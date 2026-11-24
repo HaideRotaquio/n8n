@@ -5,3 +5,7 @@ export * from "./repositories/audit";
 export * from "./repositories/brands";
 export * from "./repositories/rbac";
 export * from "./seed";
+export type { Asset, AssetVersion, ProductionJob, AgentTask, Expense } from "./schema";
+export { ASSET_STATUSES, JOB_KINDS, JOB_STATUSES, EXPENSE_CATEGORIES } from "./schema";
+export * from "./repositories/assets";
+export * from "./repositories/production";

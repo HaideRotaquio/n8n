@@ -21,11 +21,23 @@ Conventions: text primary keys with type prefixes (`brd_…`, `usr_…`, ULID-ba
 | `customer` | A user's relationship with one brand (consent, country) | `UNIQUE (user_id, brand_id)`; FK brand **restrict** (a brand with customers can't be deleted) |
 | `audit_log` | Administrative actions with before/after JSON, actor, IP, user agent | **append-only trigger** blocks UPDATE/DELETE (except FK nulling when a user/brand is removed) |
 
-## Planned (Phases 2–3)
+## Implemented (Phase 2)
+
+| Table | Purpose | Key constraints |
+|---|---|---|
+| `asset` | One product design per brand; status draft → in_review → approved/rejected → published/archived | `UNIQUE (brand_id, slug)`; FK brand restrict |
+| `asset_version` | Immutable definition snapshots with sha256 checksum and provenance | `UNIQUE (asset_id, version)`; **trigger blocks content updates** |
+| `quality_review` | Automated QA results and human decisions | decision ∈ {approved, rejected} |
+| `export_artifact` | Stored export files per version and format | `UNIQUE (asset_version_id, format)` |
+| `production_job` | Work queue + history (rig / ai / export) with attempts, backoff, cost | index (status, run_after) |
+| `agent_task` | Every model call: provider, model, tokens, cost, duration, error | FK job cascade |
+| `expense` | AI costs (automatic) and manual costs by brand/category | amount ≥ 0 |
+
+## Planned (Phase 3+)
 
 Designed in `PHASE_0_REPORT.md` §8; added by migration as each phase begins:
 
-- **Assets & production (P2):** `asset`, `asset_version` (immutable; definition JSONB + checksum), `asset_variant`, `rig`, `sound_asset`, `asset_sound`, `export_artifact`, `production_job`, `agent_task` (model, tokens, cost), `quality_review`, `publishing_job`, `expense`.
+- **Assets (later):** `sound_asset` (stored sounds with license records), `publishing_job`.
 - **Catalog & commerce (P3):** `collection`, `collection_asset`, `product`, `product_asset`, `price`, `product_file`, `order`, `order_item`, `payment`, `webhook_event` (unique provider event id → idempotency), `subscription`, `entitlement`, `license` (unique code), `download`, `revenue_record`.
 - **Analytics (P4):** `analytics_event`, partitioned by month.
 

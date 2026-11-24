@@ -79,6 +79,8 @@ export class AssetPlayer {
     const doc = (host as Node).ownerDocument ?? document;
     this.svg = buildDom(renderStructure(ad, { tokens: opts.tokens, size: opts.size, background: opts.background }), doc) as SVGSVGElement;
     this.svg.style.display = "block";
+    // Fill the host unless an explicit pixel size was requested; the host decides the size.
+    if (opts.size === undefined) this.svg.style.width = "100%";
     this.svg.style.maxWidth = "100%";
     this.svg.style.height = "auto";
     host.appendChild(this.svg);

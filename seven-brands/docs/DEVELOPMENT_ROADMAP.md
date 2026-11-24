@@ -6,8 +6,8 @@ Each phase ends with passing tests, updated docs and a report. Calendar estimate
 |---|---|---|
 | 0 Discovery | Inspection, architecture, costs, risks, MVP | ✅ 2026-11-24 |
 | 1 Foundation | Monorepo, DB, auth/RBAC, brand config, storage, admin shell, API v1, CI, docs | ✅ 2026-11-24 |
-| 2 Production engine | Asset Definition schema, SVG engine, motion runtime, audio, sync, viewer, export engine, worker + jobs, agents, expense tracking | Next |
-| 3 Commerce | Catalog, collections, prices, MoR checkout (test mode), webhooks, entitlements, licenses, downloads, orders, customer accounts | |
+| 2 Production engine | Asset Definition schema, SVG engine, motion runtime, audio, sync, viewer, export engine, worker + jobs, agents, expense tracking | ✅ 2026-11-24 (live AI run pending API key) |
+| 3 Commerce | Catalog, collections, prices, MoR checkout (test mode), webhooks, entitlements, licenses, downloads, orders, customer accounts | Next |
 | 4 Moodicons + SonicGlyphs | Multi-tenant storefront, two distinct designs, content production (~60 + ~40 assets), staging deploy | |
 | — Validation gate | Real traffic + live payments **after owner approval**; thresholds below | |
 | 5 CineGlyphs + AtmosIcons | WebM-alpha + ambient-loop exports, video-editor packaging | Gated |
@@ -15,17 +15,17 @@ Each phase ends with passing tests, updated docs and a report. Calendar estimate
 | 7 AliveUI | React package, Web Components, docs site, playground, npm distribution | Gated |
 | 8 Advanced automation | Batch production, automated QA, publishing workflows, BI reporting, cost optimization | Gated |
 
-## Phase 2 plan (next)
+## Phase 2 outcome
 
-1. `asset-schema`: Asset Definition v1 + Zod + JSON Schema export; asset/version/variant/export tables.
-2. `svg-engine`: parser, allowlist sanitizer, SVGO pass, validators (viewBox, size, path count, layer ids).
-3. `motion-runtime`: keyframes + spring solver (pre-sampling for CSS/Lottie), Web Component `<daos-asset>`, reduced-motion.
-4. `audio-engine`: playback with user-gesture unlock, offline synth presets, loudness normalization (−16 LUFS), sync cues.
-5. Universal viewer in the admin (play/pause/restart/speed/sound/background/colors/size/fullscreen).
-6. `export-engine`: SVG, Web Component, React, PNG, GIF, MP4 (+AAC), ZIP with `LICENSE.txt`; Lottie and WebM immediately after.
-7. `services/worker` with pg-boss; production/export jobs; cost tracking in `agent_task` and `expense`.
-8. Agents behind a provider interface; first adapter Anthropic. **Requires an API key with a spend limit (D8).** Until then agents run against recorded fixtures, clearly labeled.
-9. First two rigs (Moodicons face, SonicGlyphs instrument) as deterministic generators.
+Delivered as planned, with two changes: the job queue is the `production_job` table (claimed with `FOR UPDATE SKIP LOCKED`, woken by `NOTIFY`) instead of pg-boss — one less dependency, and jobs are visible in the admin; and Lottie export moved to Phase 3. Starter content: 9 Moodicons + 8 SonicGlyphs from rigs (plus palette variants on demand).
+
+## Phase 3 plan (next)
+
+1. Product, collection, price tables; product = approved asset(s) + license tiers; publish action (`asset.publish`).
+2. Merchant-of-Record adapter (Lemon Squeezy or Paddle — owner chooses) in **test mode**; signed webhooks + idempotency.
+3. Customer accounts (Better Auth sign-up on storefronts), entitlements, licenses (unique codes, verify endpoint), real LICENSE.txt in packages.
+4. Download library with signed URLs and abuse limits; order history; refunds require owner approval.
+5. Catalog/metadata agent; Lottie export; stored sound library with license records.
 
 ## Validation thresholds (initial hypotheses, owner to adjust)
 

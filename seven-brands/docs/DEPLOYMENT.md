@@ -9,7 +9,7 @@ Status: **nothing is deployed.** Provisioning any paid or public service needs o
 | Admin + storefront | Cloudflare Workers via OpenNext | Node-compatible runtime; verify `pg` over Neon's pooled connection or switch to Neon's serverless driver |
 | Database | Neon Postgres (free tier to start) | Pooled `DATABASE_URL`; PITR backups |
 | Private files | Cloudflare R2 bucket (private) | `STORAGE_DRIVER=s3`, endpoint `https://<account>.r2.cloudflarestorage.com`, region `auto` |
-| Worker (Phase 2) | Fly.io machine (scale to zero) or small VPS | Chromium + ffmpeg |
+| Worker | Fly.io machine or small VPS | Node 22 + **ffmpeg**; `pnpm --filter @sb/worker start`; needs the same DB and storage env as the admin plus `DAOS_*` AI variables |
 
 Fallback if Workers compatibility blocks us: Vercel Pro or a single VPS (Docker Compose).
 
@@ -25,7 +25,16 @@ See `.env.example`. Required in production: `DATABASE_URL`, `BETTER_AUTH_SECRET`
 4. Deploy app. Check `GET /api/health` → 200 and the admin Infrastructure page.
 5. First time only: `pnpm create-owner` with env-provided credentials.
 
-## Local development
+## Local development (with worker)
+
+```bash
+./scripts/dev-db.sh                      # local Postgres + databases (or docker compose)
+pnpm db:migrate && pnpm db:seed
+pnpm --filter @sb/admin dev              # http://localhost:3100
+pnpm --filter @sb/worker start           # runs queued jobs (Ctrl+C to stop); add --once to drain and exit
+```
+
+## Local development (Docker)
 
 ```bash
 docker compose -f infrastructure/docker-compose.yml up -d   # Postgres 16 + MinIO (optional)

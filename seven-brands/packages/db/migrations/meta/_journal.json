@@ -15,6 +15,20 @@
       "when": 1795536381501,
       "tag": "0001_audit_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795541307632,
+      "tag": "0002_assets_production",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795541308410,
+      "tag": "0003_asset_version_immutable",
+      "breakpoints": true
     }
   ]
 }

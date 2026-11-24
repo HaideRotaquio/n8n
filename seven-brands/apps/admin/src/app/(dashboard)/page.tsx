@@ -1,5 +1,5 @@
 import { BRAND_STATUSES, brandsWith, can } from "@sb/core";
-import { getDb, listAudit, listBrands, listStaff } from "@sb/db";
+import { assetCountsByStatus, getDb, listAudit, listBrands, listStaff, sumExpenses } from "@sb/db";
 import { Badge, Card, PageHeader, Stat } from "@sb/ui";
 import Link from "next/link";
 import { requirePageStaff } from "@/lib/server";
@@ -12,6 +12,11 @@ export default async function OverviewPage() {
   const db = getDb();
   const brands = await listBrands(db, brandsWith(staff.grants, "brand.read"));
   const counts = Object.fromEntries(BRAND_STATUSES.map((s) => [s, brands.filter((b) => b.status === s).length]));
+  const assetCounts = await assetCountsByStatus(db, brandsWith(staff.grants, "asset.read"));
+  const totalAssets = Object.values(assetCounts).reduce((a, b) => a + b, 0);
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const aiSpend = can(staff.grants, "finance.read") ? await sumExpenses(db, { since: monthStart, category: "ai" }) : null;
   const canTeam = can(staff.grants, "team.read");
   const canAudit = can(staff.grants, "audit.read");
   const [staffList, audit] = await Promise.all([
@@ -23,12 +28,14 @@ export default async function OverviewPage() {
     <>
       <PageHeader
         title="Overview"
-        description="Company-wide status. Sales, production and cost figures appear here once those modules are built (Phases 2–3)."
+        description="Company-wide status. Sales figures appear once commerce is built (Phase 3)."
       />
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <Stat label="Brands" value={brands.length} hint={`${counts.in_development ?? 0} in development · ${counts.live ?? 0} live`} />
         <Stat label="Planned brands" value={counts.planned ?? 0} />
         {staffList && <Stat label="Staff accounts" value={staffList.length} />}
+        <Stat label="Assets" value={totalAssets} hint={`${assetCounts.in_review ?? 0} awaiting review · ${assetCounts.approved ?? 0} approved`} />
+        {aiSpend !== null && <Stat label="AI spend this month" value={`$${aiSpend.toFixed(2)}`} />}
         <Stat label="Live storefronts" value={counts.live ?? 0} hint="Requires Phase 4" />
       </div>
 

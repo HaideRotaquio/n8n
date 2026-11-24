@@ -2,6 +2,29 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.2.0] — 2026-11-24 — Phase 2: Production engine
+
+### Added
+- `@sb/asset`: Asset Definition v1 (Zod), motion evaluator (cubic-bezier + analytic springs), frame and CSS-animated SVG rendering, automated QA with scoring, format capability table.
+- `@sb/audio`: 10 procedural sound presets (owned, deterministic), BS.1770 loudness, normalization (−16 LUFS, −1 dBFS ceiling), mixer, WAV codec.
+- `@sb/svg-engine`: allowlist importer for untrusted SVG; rejects active content.
+- `@sb/player`: browser player and `<daos-asset>` Web Component (19 KB); audio scheduled on the Web Audio clock; reduced-motion aware.
+- `@sb/export`: SVG (static/animated/hover), PNG, GIF, MP4 (H.264+AAC), WebM (VP9 alpha+Opus), WAV + cue sheet, Web Component, React, JSON, ZIP with README and preview license.
+- `@sb/rigs`: Moodicons face rig (9 expressions × 4 palettes), SonicGlyphs line glyphs (8 × 3).
+- `@sb/agents`: provider interface, Anthropic adapter (structured outputs, refusal fallback, prompt caching, cost tracking), fixture provider, creative director → SVG artist → animator pipeline with repair rounds.
+- `services/worker`: table-backed job queue (rig / ai / export), retries, stale recovery, budget caps.
+- DB: asset, asset_version (immutable), quality_review, export_artifact, production_job, agent_task, expense.
+- Admin: asset library, Universal Viewer, human review, exports with signed downloads, production factory, job detail, AI agent runs, QA queue, expenses.
+- Tests: 243 unit/integration/browser + 15 E2E.
+
+### Changed
+- Job queue uses Postgres directly instead of pg-boss (documented in ARCHITECTURE.md).
+- `@sb/core` ids use Web Crypto (browser-safe).
+
+### Not yet done
+- No live Anthropic call has been made: it needs `DAOS_ANTHROPIC_API_KEY` in the environment.
+- Lottie export and stored sounds moved to Phase 3.
+
 ## [0.1.0] — 2026-11-24 — Phase 1: Foundation
 
 ### Added

@@ -19,9 +19,22 @@
 | Secrets | Only via environment; `.env` git-ignored; `BETTER_AUTH_SECRET` / signing secret must be ≥ 32 chars or the app refuses to start | auth.test, storage.test |
 | Privacy | Better Auth telemetry disabled | config |
 
+## Implemented (Phase 2)
+
+| Control | Implementation | Test |
+|---|---|---|
+| Untrusted SVG | Parsed, never re-emitted; allowlisted elements/attributes converted to AD; scripts, handlers, foreignObject, external refs, entities → hard reject | svg.test (7 attack cases) |
+| Safe rendering | Renderer builds markup only from schema-validated numbers, hex colors and path data; browser player uses createElementNS/setAttribute with fixed names | asset.test, player.test (malicious JSON) |
+| Embedded JSON | `<script>` payloads escape `<`, `>`, `&`, U+2028/9 | export.test |
+| Asset integrity | Versions immutable (DB trigger) with sha256 checksums | production.test |
+| Agent boundaries | Agents return typed data only; worker validates and stores drafts; no DB/secret/payment access; human approval required | agents.test, worker.test, e2e |
+| AI spend | Daily/monthly caps checked before each call; every call booked as expense | worker.test |
+| Key isolation | Provider reads only `DAOS_ANTHROPIC_*`; never the dev tooling's `ANTHROPIC_BASE_URL` | agents.test |
+| Brand isolation | Jobs/exports refuse cross-brand assets; listings scoped | worker.test, e2e |
+
 ## Planned
 
-- **Phase 2:** SVG allowlist sanitizer (no `script`, `foreignObject`, `on*`, external `href`, CSS `url()`/`@import`); untrusted SVG previewed via `<img>` or sandboxed iframe only; upload type sniffing and size limits; agent permission boundaries (see AI_AGENT_ARCHITECTURE.md).
+- **SVG upload UI:** file type sniffing and size limits in front of the importer.
 - **Phase 3:** payment webhook signature verification + idempotency table; entitlement checks before every download URL; license verification endpoint; GDPR / PH Data Privacy Act export and deletion.
 - **Before launch:** 2FA for staff (Better Auth plugin), Sentry, dependency audit in CI, backup restore drill, CSP header, external review of license terms.
 

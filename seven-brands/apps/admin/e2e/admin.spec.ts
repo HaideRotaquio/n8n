@@ -76,7 +76,7 @@ test.describe("owner", () => {
     await page.goto("/infrastructure");
     const db = page.getByRole("row", { name: /Database/ });
     await expect(db).toContainText("OK");
-    await expect(db).toContainText("2 migrations applied");
+    await expect(db).toContainText(/\d+ migrations applied/);
     await expect(page.getByRole("row", { name: /Object storage/ })).toContainText("OK");
   });
 });

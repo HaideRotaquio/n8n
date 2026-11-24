@@ -86,3 +86,13 @@ export function apiError(err: unknown): NextResponse {
   console.error(err);
   return NextResponse.json({ error: { code: "internal", message: "Internal error" } }, { status: 500 });
 }
+
+import { budgetFromEnv, providerFromEnv } from "@sb/agents";
+
+/** AI provider status for display/gating (the worker re-checks when it runs the job). */
+export function aiStatus(): { configured: true; label: string } | { configured: false; reason: string } {
+  const s = providerFromEnv(process.env);
+  return s.configured ? { configured: true, label: s.label } : { configured: false, reason: s.reason };
+}
+
+export const aiBudget = () => budgetFromEnv(process.env);

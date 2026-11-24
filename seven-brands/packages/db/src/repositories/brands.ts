@@ -113,3 +113,8 @@ export async function setBrandStatus(
     return updated!;
   });
 }
+
+export async function getBrandById(db: DbOrTx, id: string): Promise<Brand | undefined> {
+  const [row] = await db.select().from(brand).where(eq(brand.id, id)).limit(1);
+  return row;
+}

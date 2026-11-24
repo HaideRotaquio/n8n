@@ -1,6 +1,6 @@
 import { getDb, pingDb } from "@sb/db";
 import { Badge, PageHeader, Table } from "@sb/ui";
-import { getStorage, requirePageStaff } from "@/lib/server";
+import { aiBudget, aiStatus, getStorage, requirePageStaff } from "@/lib/server";
 
 export const metadata = { title: "Infrastructure" };
 export const dynamic = "force-dynamic";
@@ -36,7 +36,13 @@ export default async function InfrastructurePage() {
     detail: process.env.AUTH_RATE_LIMIT === "off" ? "Disabled (AUTH_RATE_LIMIT=off)" : "Enabled, stored in Postgres",
   });
   checks.push({ name: "Runtime", ok: true, detail: `Node ${process.version} · ${process.env.NODE_ENV}` });
-  checks.push({ name: "AI provider", ok: false, detail: "Not configured — needed in Phase 2 (no API key provided yet)" });
+  const ai = aiStatus();
+  const budget = aiBudget();
+  checks.push({
+    name: "AI provider",
+    ok: ai.configured,
+    detail: ai.configured ? `${ai.label} · caps $${budget.dailyUsd}/day, $${budget.monthlyUsd}/month` : ai.reason,
+  });
   checks.push({ name: "Payment provider", ok: false, detail: "Not configured — Phase 3, test mode first" });
 
   return (

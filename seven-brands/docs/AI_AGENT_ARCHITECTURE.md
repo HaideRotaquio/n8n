@@ -1,42 +1,39 @@
 # AI agent architecture
 
-Status: **design** (Phase 2). No agent runs today and no AI provider key is configured.
+Status: **implemented (Phase 2)**, tested with recorded fixtures and a local fake of the Anthropic API. **Not yet run against the live API** — that needs `DAOS_ANTHROPIC_API_KEY`.
 
-## Shape of an agent
+## Configuration
 
-```ts
-interface Agent<I, O> {
-  name: "creative_director" | "svg_production" | "animation" | "sound_design" | "sync" | "qa" | "catalog" | "publishing" | "bi";
-  input: ZodType<I>;
-  output: ZodType<O>;
-  run(input: I, ctx: AgentContext): Promise<O>;   // ctx: provider, budget, logger, read-only lookups
-}
-```
+| Variable | Purpose | Default |
+|---|---|---|
+| `DAOS_ANTHROPIC_API_KEY` | Enables the Anthropic provider | unset → AI jobs refused with a clear message |
+| `DAOS_ANTHROPIC_MODEL` | Model id | `claude-opus-5-5` |
+| `DAOS_ANTHROPIC_BASE_URL` | Override API host | `https://api.anthropic.com` (never read from `ANTHROPIC_BASE_URL`) |
+| `DAOS_AI_PROVIDER=fixture` | Labelled demo/test mode with recorded outputs | off |
+| `DAOS_AI_DAILY_BUDGET_USD` / `DAOS_AI_MONTHLY_BUDGET_USD` | Spend caps checked before every call | 5 / 50 |
 
-- Agents are **workflow steps**, not open-ended loops: code orchestrates, the model fills a typed slot (structured outputs).
-- The orchestrator (worker) validates output, persists it to `agent_task`, and advances the job. Agents never write to the database themselves.
+The key goes in the cloud environment's variables (or the host's secret store in production) — never in the repo.
 
-## Provider independence
+## Agents (workflow steps, not open-ended loops)
 
-`ModelProvider` interface: `generateStructured(schema, prompt, opts)`, `generateText`, `batch`. First adapter: Anthropic Messages API. Model per agent is configuration (default to the most capable model; cheaper tiers only where an eval shows equal quality). Image/sound providers get their own small interfaces.
+| Agent | Output (typed via structured outputs) | Effort |
+|---|---|---|
+| `creative_director` | Concept: name, slug, category, tags, artwork, animatable parts, motion, sound, label | medium |
+| `svg_artist` | Complete SVG; importer validates and can send errors back once | high |
+| `animator` | Duration, tracks (with pivots), markers, sound cues, still frame; QA can send errors back once | medium |
 
-## Permissions
+Code (`packages/agents/src/pipeline.ts`) orchestrates; models only fill typed slots. Every output is re-validated by the Asset Definition schema and QA.
 
-| Agent | May read | May write (via orchestrator) | Never |
-|---|---|---|---|
-| Creative Director | Brand config, catalog stats | Briefs, concepts | — |
-| SVG / Animation / Sound / Sync | Brief, rig library | Draft asset versions | Publish |
-| QA | Asset version, renders | `quality_review` | Approve for publish |
-| Catalog | Asset version | Draft metadata | Prices |
-| Publishing | Approved items | Publishing job **after human approval** | Prices, refunds |
-| BI | Aggregates | Reports | Customer PII |
+## Provider layer
 
-No agent gets secrets, payment operations, refunds, license changes, customer PII or destructive infrastructure access. Every action is logged; high-impact actions need a human approval recorded in `audit_log`.
+`ModelProvider.generate({ agent, system, prompt, schema, effort })` → `{ output, model, usage, costUsd }`.
 
-## Cost control
+The Anthropic adapter: Messages API (beta endpoint) with structured JSON output, `fallbacks: "default"` (server-side refusal fallback, beta `server-side-fallback-2026-07-01`), cached system prompt, explicit effort. It checks `stop_reason` before parsing: refusals and auth errors are permanent; rate limits, 5xx and truncated/invalid output are retryable. Cost uses the model that actually served the request.
 
-Token usage and USD cost recorded per `agent_task`; daily and monthly caps enforced before each call; batch API for collections; prompt caching for brand style guides. Estimates: `COST_MODEL.md`.
+## Permission boundaries
 
-## Quality
+Agents never touch the database, storage, secrets, payments or customers. The worker records their calls, stores results as **new versions in draft/in_review**, and nothing is published without a human approval (`asset.review`, audited). Fixture-made assets are labelled everywhere and marked "not for sale".
 
-Each LLM-backed agent gets a small eval set (inputs + graders) before it's used in production; model or prompt changes must not reduce the score.
+## Next
+
+Eval set per agent before production use; batch API (−50%) for collections; catalog/metadata agent (Phase 3).

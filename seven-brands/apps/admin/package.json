@@ -11,10 +11,14 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@sb/agents": "workspace:*",
+    "@sb/asset": "workspace:*",
     "@sb/auth": "workspace:*",
     "@sb/brands": "workspace:*",
     "@sb/core": "workspace:*",
     "@sb/db": "workspace:*",
+    "@sb/player": "workspace:*",
+    "@sb/rigs": "workspace:*",
     "@sb/storage": "workspace:*",
     "@sb/ui": "workspace:*",
     "next": "^16.4.6",

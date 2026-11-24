@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phase 1 implemented. Sections marked *(planned)* are designs, not code.
+Status: Phases 1–2 implemented. Sections marked *(planned)* are designs, not code.
 
 ## Principles
 
@@ -50,17 +50,25 @@ Browser ──HTTPS──▶ apps/admin (Next.js, Node runtime)
   - `canAny` → section-level gating (data must still be brand-scoped).
 - Company-wide pages (team, audit, infrastructure) require global grants.
 
-## Planned components (Phases 2–4)
+## Production components (Phase 2, implemented)
 
 | Component | Package | Notes |
 |---|---|---|
-| Asset Definition schema | `packages/asset-schema` | Canonical JSON: layers, tokens, timeline, sounds, interactions, a11y |
-| SVG engine | `packages/svg-engine` | parse → allowlist rebuild → SVGO → validate |
-| Motion runtime | `packages/motion-runtime` | ~3–5 KB spring/keyframe runtime + Web Component |
-| Audio engine | `packages/audio-engine` | Web Audio playback, offline synth, loudness normalization |
-| Export engine | `packages/export-engine` | SVG, Web Component, React, PNG, GIF, MP4, WebM, Lottie, ZIP |
-| Worker | `services/worker` | pg-boss jobs: production, export, publishing; Chromium + ffmpeg |
-| Agents | `packages/agents` | Typed agents behind a provider interface (see AI_AGENT_ARCHITECTURE.md) |
+| Asset Definition schema, motion evaluator, renderer, QA | `packages/asset` | Pure TS; `@sb/asset/runtime` is the zod-free browser subset |
+| Audio engine | `packages/audio` | Procedural presets, BS.1770 loudness, mixer, WAV |
+| SVG importer | `packages/svg-engine` | Allowlist conversion of untrusted SVG |
+| Player + `<daos-asset>` | `packages/player` | DOM via createElementNS; Web Audio look-ahead scheduling |
+| Export engine | `packages/export` | resvg (raster), ffmpeg (GIF/MP4/WebM), esbuild (player bundle), fflate (ZIP) |
+| Rigs | `packages/rigs` | Deterministic generators = free, consistent content |
+| Agents | `packages/agents` | Provider interface, Anthropic adapter, fixtures, pipeline |
+| Worker | `services/worker` | Table-backed queue (`production_job`), LISTEN/NOTIFY, retries, stale recovery |
+
+Runtime now: `apps/admin` (Next.js) + `services/worker` (Node, needs ffmpeg) sharing Postgres and object storage.
+
+## Planned (Phases 3–4)
+
+| Component | Package | Notes |
+|---|---|---|
 | Commerce | `packages/commerce` | Merchant-of-Record adapter, webhooks, entitlements, licenses |
 | Storefront | `apps/storefront` | Multi-tenant, host-routed |
 
@@ -71,5 +79,5 @@ Browser ──HTTPS──▶ apps/admin (Next.js, Node runtime)
 | ORM | Drizzle 0.45 | SQL-transparent, no engine binary, edge-compatible |
 | Auth | Better Auth 1.7 | Self-hosted, no per-user fees, Postgres-backed sessions and rate limits |
 | Web | Next.js 16 + React 19 + Tailwind 4 | SSR for SEO, server actions, one stack for admin and storefronts |
-| Queue *(P2)* | pg-boss | No Redis to pay for or run |
+| Queue | Postgres table + `FOR UPDATE SKIP LOCKED` + NOTIFY | No Redis or extra library; jobs are queryable in the admin |
 | TypeScript | 5.9 | TS 7 (native) is out, but Next.js tooling still targets the 5.x API |
