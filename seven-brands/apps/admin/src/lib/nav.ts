@@ -4,7 +4,7 @@ import type { Permission } from "@sb/core";
  * The 16 dashboard sections from the blueprint. `phase` marks when a section is built;
  * sections with a phase later than the current one render an honest "not built yet" page.
  */
-export const CURRENT_PHASE = 2;
+export const CURRENT_PHASE = 3;
 
 export interface NavItem {
   href: string;

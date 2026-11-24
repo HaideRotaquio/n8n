@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@source "../../../../packages/ui/src";
+
+/*
+ * Brand tokens are set per request from the brand's config (themeToCssVars) on <body>.
+ * These defaults only apply to the "unknown storefront" page.
+ * Phase 4 replaces this functional layout with each brand's own design.
+ */
+:root {
+  --color-background: #f8f9fb;
+  --color-surface: #ffffff;
+  --color-text: #111827;
+  --color-muted-text: #4b5563;
+  --color-primary: #1f2937;
+  --color-primary-text: #ffffff;
+  --color-accent: #6366f1;
+  --color-border: #e5e7eb;
+  --radius: 8px;
+  --font-heading: ui-sans-serif, system-ui, sans-serif;
+  --font-body: ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+}

@@ -664,3 +664,8 @@ export async function exportCustomerData(db: Database, customerId: string) {
     downloads,
   };
 }
+
+/** Opt-in only; the timestamp records when consent was given (or null after withdrawal). */
+export async function setMarketingConsent(db: DbOrTx, customerId: string, consent: boolean): Promise<void> {
+  await db.update(customer).set({ marketingConsent: consent, marketingConsentAt: consent ? new Date() : null }).where(eq(customer.id, customerId));
+}

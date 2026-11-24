@@ -16,7 +16,7 @@ const securityHeaders = [
 
 const config: NextConfig = {
   poweredByHeader: false,
-  transpilePackages: ["@sb/core", "@sb/db", "@sb/auth", "@sb/brands", "@sb/storage", "@sb/ui", "@sb/asset", "@sb/audio", "@sb/player", "@sb/rigs", "@sb/agents"],
+  transpilePackages: ["@sb/core", "@sb/db", "@sb/auth", "@sb/brands", "@sb/storage", "@sb/ui", "@sb/asset", "@sb/audio", "@sb/player", "@sb/rigs", "@sb/agents", "@sb/commerce"],
   serverExternalPackages: ["pg", "@anthropic-ai/sdk"],
   experimental: { authInterrupts: true },
   async headers() {
