@@ -269,23 +269,44 @@ export async function fulfillPaidOrder(db: Database, input: PaidOrderInput): Pro
 
 // ─── Refunds ─────────────────────────────────────────────────────────────────
 
+export type ProviderRefundInput = {
+  provider: PaymentProviderName;
+  providerOrderId: string;
+  refundedAt: Date;
+} & (
+  /** Lemon Squeezy style: the order's total refunded so far. */
+  | { mode: "cumulative"; refundedCents: number }
+  /** Paddle style: one refund (adjustment) with its own id; replays of the same id are ignored. */
+  | { mode: "increment"; amountCents: number; providerRefundId: string }
+);
+
 /**
- * Applies a refund reported by the provider. `refundedCents` is the cumulative refunded amount.
- * A full refund revokes the order's licenses and entitlements; a partial refund keeps access.
+ * Applies a refund reported by the provider (by webhook, so it may repeat). A full refund revokes the order's
+ * licenses and entitlements; a partial refund keeps access. Closes a matching staff request, or records a
+ * `completed` refund row when the refund was made in the provider's dashboard.
  */
-export async function applyProviderRefund(
-  db: Database,
-  input: { provider: PaymentProviderName; providerOrderId: string; refundedCents: number; refundedAt: Date; providerRefundId?: string | null },
-): Promise<{ status: "applied" | "unchanged" | "unknown_order"; order?: Order }> {
+export async function applyProviderRefund(db: Database, input: ProviderRefundInput): Promise<{ status: "applied" | "unchanged" | "unknown_order"; order?: Order }> {
   return db.transaction(async (tx) => {
     const [o] = await tx.select().from(order).where(and(eq(order.provider, input.provider), eq(order.providerOrderId, input.providerOrderId))).for("update");
     if (!o) return { status: "unknown_order" };
-    const refunded = Math.min(Math.max(input.refundedCents, o.refundedCents), o.totalCents);
-    if (refunded === o.refundedCents) return { status: "unchanged", order: o };
-    const full = refunded >= o.totalCents;
+    let newTotal: number;
+    let providerRefundId: string;
+    if (input.mode === "increment") {
+      const [seen] = await tx.select({ id: refundRequest.id }).from(refundRequest).where(and(eq(refundRequest.orderId, o.id), eq(refundRequest.providerRefundId, input.providerRefundId), eq(refundRequest.status, "completed")));
+      if (seen) return { status: "unchanged", order: o };
+      newTotal = o.refundedCents + Math.max(0, Math.round(input.amountCents));
+      providerRefundId = input.providerRefundId;
+    } else {
+      newTotal = Math.max(o.refundedCents, Math.round(input.refundedCents));
+      providerRefundId = `cumulative:${newTotal}`;
+    }
+    newTotal = Math.min(newTotal, o.totalCents);
+    const delta = newTotal - o.refundedCents;
+    if (delta <= 0) return { status: "unchanged", order: o };
+    const full = newTotal >= o.totalCents;
     const [u] = await tx
       .update(order)
-      .set({ refundedCents: refunded, status: full ? "refunded" : "partially_refunded", refundedAt: input.refundedAt })
+      .set({ refundedCents: newTotal, status: full ? "refunded" : "partially_refunded", refundedAt: input.refundedAt })
       .where(eq(order.id, o.id))
       .returning();
     if (full) {
@@ -297,18 +318,33 @@ export async function applyProviderRefund(
         await tx.update(entitlement).set({ revokedAt: input.refundedAt, revokedReason: "refunded" }).where(and(inArray(entitlement.licenseId, licIds), isNull(entitlement.revokedAt)));
       }
     }
-    // Close the matching approved request, if staff started this refund.
-    await tx
-      .update(refundRequest)
-      .set({ status: "completed", providerRefundId: input.providerRefundId ?? null })
-      .where(and(eq(refundRequest.orderId, o.id), eq(refundRequest.status, "submitted")));
+    const [pending] = await tx
+      .select()
+      .from(refundRequest)
+      .where(and(eq(refundRequest.orderId, o.id), eq(refundRequest.status, "submitted")))
+      .orderBy(desc(refundRequest.createdAt))
+      .limit(1);
+    if (pending) {
+      await tx.update(refundRequest).set({ status: "completed", providerRefundId }).where(eq(refundRequest.id, pending.id));
+    } else {
+      await tx.insert(refundRequest).values({
+        id: newId("ref"),
+        orderId: o.id,
+        brandId: o.brandId,
+        amountCents: delta,
+        reason: "Refund made in the payment provider's dashboard",
+        status: "completed",
+        providerRefundId,
+        decidedAt: input.refundedAt,
+      });
+    }
     await recordAudit(tx, { actorUserId: null, userAgent: `webhook:${input.provider}` }, {
       action: full ? "order.refunded" : "order.partially_refunded",
       entityType: "order",
       entityId: o.id,
       brandId: o.brandId,
       before: { status: o.status, refundedCents: o.refundedCents },
-      after: { status: u!.status, refundedCents: refunded },
+      after: { status: u!.status, refundedCents: newTotal, providerRefundId },
     });
     return { status: "applied", order: u! };
   });

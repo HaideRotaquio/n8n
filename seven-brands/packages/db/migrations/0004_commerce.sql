@@ -171,6 +171,7 @@ CREATE TABLE "refund_request" (
 	"error" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "refund_provider_unique" UNIQUE("order_id","provider_refund_id"),
 	CONSTRAINT "refund_amount_positive" CHECK ("refund_request"."amount_cents" > 0)
 );
 --> statement-breakpoint
@@ -234,4 +235,5 @@ CREATE INDEX "order_item_order_idx" ON "order_item" USING btree ("order_id");-->
 CREATE INDEX "product_brand_status_idx" ON "product" USING btree ("brand_id","status","published_at");--> statement-breakpoint
 CREATE INDEX "product_asset_asset_idx" ON "product_asset" USING btree ("asset_id");--> statement-breakpoint
 CREATE INDEX "refund_request_status_idx" ON "refund_request" USING btree ("status","created_at");--> statement-breakpoint
+CREATE INDEX "refund_request_order_idx" ON "refund_request" USING btree ("order_id");--> statement-breakpoint
 CREATE INDEX "webhook_event_time_idx" ON "webhook_event" USING btree ("received_at");

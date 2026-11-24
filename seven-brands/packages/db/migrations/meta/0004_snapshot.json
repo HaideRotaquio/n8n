@@ -1,5 +1,5 @@
 {
-  "id": "3d7baa40-58a2-412e-9121-c17d3a695c8d",
+  "id": "eb5fec9b-24c7-49e1-82a6-0b2c0c897d87",
   "prevId": "1642f012-9d80-48d0-8784-fd14954c2d77",
   "version": "7",
   "dialect": "postgresql",
@@ -3274,6 +3274,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "refund_request_order_idx": {
+          "name": "refund_request_order_idx",
+          "columns": [
+            {
+              "expression": "order_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -3331,7 +3346,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "refund_provider_unique": {
+          "name": "refund_provider_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "order_id",
+            "provider_refund_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {
         "refund_amount_positive": {

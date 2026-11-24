@@ -274,19 +274,33 @@ describe("downloads, licenses and refunds", () => {
     expect(decided.request.status).toBe("submitted");
     await expect(decideRefund(h.db, staff, { refundId: req.id, approve: true })).rejects.toThrow(/already/);
 
-    const partial = await applyProviderRefund(h.db, { provider: "test", providerOrderId: o.providerOrderId, refundedCents: 100, refundedAt: new Date() });
+    const partial = await applyProviderRefund(h.db, { provider: "test", providerOrderId: o.providerOrderId, mode: "increment", amountCents: 100, providerRefundId: "rf_1", refundedAt: new Date() });
     expect(partial.order!.status).toBe("partially_refunded");
     expect((await authorizeDownload(h.db, { customerId: customer.id, entitlementId: result.entitlement.id, assetId: asset.asset.id })).ok).toBe(true);
 
-    const full = await applyProviderRefund(h.db, { provider: "test", providerOrderId: o.providerOrderId, refundedCents: o.totalCents, refundedAt: new Date(), providerRefundId: "rf_1" });
+    const full = await applyProviderRefund(h.db, { provider: "test", providerOrderId: o.providerOrderId, mode: "cumulative", refundedCents: o.totalCents, refundedAt: new Date() });
     expect(full.order!.status).toBe("refunded");
     expect((await verifyLicense(h.db, result.license.code)).status).toBe("revoked");
     expect(await authorizeDownload(h.db, { customerId: customer.id, entitlementId: result.entitlement.id, assetId: asset.asset.id })).toMatchObject({ ok: false, reason: "not_entitled" });
     expect(await getCustomerLibrary(h.db, customer.id)).toHaveLength(0);
-    // Replaying the refund webhook changes nothing.
-    expect((await applyProviderRefund(h.db, { provider: "test", providerOrderId: o.providerOrderId, refundedCents: o.totalCents, refundedAt: new Date() })).status).toBe("unchanged");
-    const [{ status }] = (await h.db.execute<{ status: string }>(sql`select status from refund_request where id = ${req.id}`)).rows as { status: string }[];
-    expect(status).toBe("completed");
+    // Replaying refund webhooks changes nothing.
+    expect((await applyProviderRefund(h.db, { provider: "test", providerOrderId: o.providerOrderId, mode: "cumulative", refundedCents: o.totalCents, refundedAt: new Date() })).status).toBe("unchanged");
+    expect((await applyProviderRefund(h.db, { provider: "test", providerOrderId: o.providerOrderId, mode: "increment", amountCents: 100, providerRefundId: "rf_1", refundedAt: new Date() })).status).toBe("unchanged");
+    const rows = (await h.db.execute<{ status: string; amount_cents: number }>(sql`select status, amount_cents from refund_request where order_id = ${o.id} order by created_at`)).rows;
+    expect(rows.map((r) => r.status)).toEqual(["completed", "completed"]);
+    expect(rows[0]!.amount_cents).toBe(o.totalCents); // the approved request
+  });
+
+  it("records dashboard refunds once, even when increments repeat", async () => {
+    await publishedSingle("dash-refund");
+    const { result } = await buy("dash-refund", "dash@example.test");
+    if (result.status !== "fulfilled") throw new Error("not fulfilled");
+    const o = result.order;
+    const ev = { provider: "test" as const, providerOrderId: o.providerOrderId, mode: "increment" as const, amountCents: 200, providerRefundId: "adj_1", refundedAt: new Date() };
+    expect((await applyProviderRefund(h.db, ev)).order!.refundedCents).toBe(200);
+    expect((await applyProviderRefund(h.db, ev)).status).toBe("unchanged");
+    expect((await applyProviderRefund(h.db, { ...ev, providerRefundId: "adj_2" })).order!.refundedCents).toBe(400);
+    expect((await applyProviderRefund(h.db, { provider: "paddle", providerOrderId: "txn_unknown", mode: "cumulative", refundedCents: 1, refundedAt: new Date() })).status).toBe("unknown_order");
   });
 
   it("exports a customer's data", async () => {

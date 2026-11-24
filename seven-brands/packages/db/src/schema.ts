@@ -683,7 +683,10 @@ export const download = pgTable(
   (t) => [index("download_customer_time_idx").on(t.customerId, t.createdAt)],
 );
 
-/** Refunds always need an owner's approval before money moves. */
+/**
+ * Refunds. Staff-initiated refunds start as `requested` and need an owner's approval before money moves.
+ * Refunds made in the provider's dashboard arrive by webhook and are recorded as `completed` rows.
+ */
 export const refundRequest = pgTable(
   "refund_request",
   {
@@ -704,7 +707,12 @@ export const refundRequest = pgTable(
     error: text("error"),
     ...timestamps,
   },
-  (t) => [index("refund_request_status_idx").on(t.status, t.createdAt), check("refund_amount_positive", sql`${t.amountCents} > 0`)],
+  (t) => [
+    index("refund_request_status_idx").on(t.status, t.createdAt),
+    index("refund_request_order_idx").on(t.orderId),
+    unique("refund_provider_unique").on(t.orderId, t.providerRefundId),
+    check("refund_amount_positive", sql`${t.amountCents} > 0`),
+  ],
 );
 
 export type Collection = typeof collection.$inferSelect;

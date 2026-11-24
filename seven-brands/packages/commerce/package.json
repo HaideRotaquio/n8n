@@ -1,0 +1,20 @@
+{
+  "name": "@sb/commerce",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sb/asset": "workspace:*",
+    "@sb/core": "workspace:*",
+    "@sb/db": "workspace:*",
+    "fflate": "^0.8.3",
+    "zod": "^4.6.7"
+  }
+}
