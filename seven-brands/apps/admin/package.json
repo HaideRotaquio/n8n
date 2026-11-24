@@ -13,6 +13,7 @@
   "dependencies": {
     "@sb/agents": "workspace:*",
     "@sb/asset": "workspace:*",
+    "@sb/audio": "workspace:*",
     "@sb/auth": "workspace:*",
     "@sb/brands": "workspace:*",
     "@sb/commerce": "workspace:*",

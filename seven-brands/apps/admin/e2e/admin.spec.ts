@@ -68,7 +68,7 @@ test.describe("owner", () => {
   test("planned sections say they are not built", async ({ page }) => {
     await signIn(page, OWNER);
     await page.goto("/analytics");
-    await expect(page.getByText("Not built yet — scheduled for Phase 4")).toBeVisible();
+    await expect(page.getByText("Not built yet — scheduled for Phase 5")).toBeVisible();
   });
 
   test("infrastructure checks pass for database and storage", async ({ page }) => {

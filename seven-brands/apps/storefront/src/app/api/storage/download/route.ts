@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   if (!body) return new Response("Not found", { status: 404 });
   return new Response(Buffer.from(body), {
     headers: {
-      "content-type": "application/octet-stream",
+      "content-type": /\.wav$/i.test(verified.key) ? "audio/wav" : "application/octet-stream",
       "content-disposition": contentDisposition(verified.filename),
       "cache-control": "private, no-store",
     },

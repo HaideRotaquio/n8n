@@ -143,10 +143,10 @@ function Home({ tagline, description, items, categories, q, category, freePack, 
   );
 }
 
-function Product({ title, description, categoryLabel, assets, buy, facts, customizer }: ProductProps) {
+function Product({ title, description, categoryLabel, assets, buy, facts, customizer, soundUrls }: ProductProps) {
   return (
     <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr]">
-      <LivePreview assets={assets} look="studio" customizer={customizer} />
+      <LivePreview assets={assets} look="studio" customizer={customizer} soundUrls={soundUrls} />
       <div className="space-y-6">
         <div>
           {categoryLabel && <p className={`text-[var(--color-primary)] ${mono}`}>{categoryLabel}</p>}

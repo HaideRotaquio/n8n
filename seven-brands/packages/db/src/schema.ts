@@ -247,7 +247,7 @@ export type Customer = typeof customer.$inferSelect;
 
 export const ASSET_STATUSES = ["draft", "in_review", "approved", "rejected", "published", "archived"] as const;
 export const assetStatus = pgEnum("asset_status", ASSET_STATUSES);
-export const JOB_KINDS = ["rig", "ai", "export"] as const;
+export const JOB_KINDS = ["rig", "ai", "export", "catalog"] as const;
 export const jobKind = pgEnum("job_kind", JOB_KINDS);
 export const JOB_STATUSES = ["queued", "running", "succeeded", "failed", "cancelled"] as const;
 export const jobStatus = pgEnum("job_status", JOB_STATUSES);
@@ -726,3 +726,39 @@ export type License = typeof license.$inferSelect;
 export type Entitlement = typeof entitlement.$inferSelect;
 export type Download = typeof download.$inferSelect;
 export type RefundRequest = typeof refundRequest.$inferSelect;
+
+// ─── Phase 4: stored sounds, catalog jobs ────────────────────────────────────
+
+export const SOUND_SOURCES = ["recorded", "library", "synthesized", "ai"] as const;
+export const soundSource = pgEnum("sound_source", SOUND_SOURCES);
+
+/**
+ * Stored sounds (`snd_…` in asset definitions). Every sound carries a license record: where it came from,
+ * under which terms, and who confirmed we may sell it. Files are normalized to −16 LUFS / −1 dBFS, mono, 48 kHz.
+ */
+export const soundAsset = pgTable(
+  "sound_asset",
+  {
+    id: text("id").primaryKey(),
+    /** null = shared by every brand. */
+    brandId: text("brand_id").references(() => brand.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    source: soundSource("source").notNull(),
+    author: text("author").notNull(),
+    /** License name or URL, e.g. "Own recording", "CC0 1.0 — freesound.org/s/123". */
+    licenseRef: text("license_ref").notNull(),
+    licenseNotes: text("license_notes").notNull().default(""),
+    rightsConfirmedBy: text("rights_confirmed_by").references(() => user.id, { onDelete: "set null" }),
+    storageKey: text("storage_key").notNull(),
+    bytes: integer("bytes").notNull(),
+    sha256: text("sha256").notNull(),
+    durationMs: integer("duration_ms").notNull(),
+    sampleRate: integer("sample_rate").notNull(),
+    loudnessLufs: numeric("loudness_lufs", { precision: 6, scale: 2 }),
+    peakDbfs: numeric("peak_dbfs", { precision: 6, scale: 2 }),
+    retiredAt: timestamp("retired_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("sound_asset_brand_idx").on(t.brandId, t.createdAt), check("sound_license_present", sql`length(${t.licenseRef}) >= 3`)],
+);
+export type SoundAsset = typeof soundAsset.$inferSelect;

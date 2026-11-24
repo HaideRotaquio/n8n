@@ -108,3 +108,25 @@ describe("wav", () => {
     expect(() => decodeWav(new Uint8Array(100))).toThrow();
   });
 });
+
+describe("stored sounds", async () => {
+  const { prepareStoredSound, loadStoredSound, encodeWav, integratedLoudness } = await import("./index");
+  const tone = (sec: number, sr: number, amp = 0.1) => Float32Array.from({ length: Math.round(sec * sr) }, (_, i) => amp * Math.sin((2 * Math.PI * 440 * i) / sr));
+  it("mixes to mono, resamples to 48 kHz and normalizes to −16 LUFS", () => {
+    const l = tone(1, 44_100);
+    const p = prepareStoredSound(encodeWav([l, l], 44_100));
+    expect(p.sampleRate).toBe(48_000);
+    expect(p.durationMs).toBe(1000);
+    expect(p.loudnessLufs!).toBeGreaterThan(-16.6);
+    expect(p.loudnessLufs!).toBeLessThan(-15.4);
+    expect(p.peakDbfs).toBeLessThanOrEqual(-1 + 1e-6);
+    const back = loadStoredSound(p.wav);
+    expect(back.length).toBe(48_000);
+    expect(Math.abs(integratedLoudness(back, 48_000) - p.loudnessLufs!)).toBeLessThan(0.2);
+  });
+  it("rejects silence, overlong files and non-WAV data", () => {
+    expect(() => prepareStoredSound(encodeWav([new Float32Array(48_000)], 48_000))).toThrow(/silent/);
+    expect(() => prepareStoredSound(encodeWav([tone(11, 8000)], 8000))).toThrow(/at most 10 seconds/);
+    expect(() => prepareStoredSound(new TextEncoder().encode("not a wav file at all, sorry; definitely not RIFF data"))).toThrow(/Not a WAV/);
+  });
+});

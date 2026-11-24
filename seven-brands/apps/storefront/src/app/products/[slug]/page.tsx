@@ -50,6 +50,7 @@ export default async function ProductPage({ params }: Props) {
       categoryLabel={first.category ? (categories.get(first.category) ?? first.category) : null}
       assets={detail.assets.map((a) => ({ id: a.asset.id, name: a.asset.name, definition: a.definition }))}
       customizer={store.brand.config.features.customizer}
+      soundUrls={Object.fromEntries(detail.assets.flatMap((a) => a.definition.sounds.filter((c) => c.sound.startsWith("snd_")).map((c) => [c.sound, `/api/sounds/${c.sound}`])))}
       facts={[
         { label: "Files", value: designs > 1 ? `${detail.assets.length} icons (${designs} designs)` : `${detail.assets.length} ${detail.assets.length === 1 ? "icon" : "color styles"}` },
         { label: "Loop", value: `${(first.timeline.duration / 1000).toFixed(1)} s` },

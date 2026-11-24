@@ -18,7 +18,7 @@ const styleName = (a: PreviewAsset) => /\(([^)]+)\)$/.exec(a.name)?.[1] ?? a.def
  * and sound that stays off until the visitor turns it on. Honors prefers-reduced-motion.
  * `look` only changes styling: "playful" (Moodicons) or "studio" (SonicGlyphs, with a cue timeline).
  */
-export function LivePreview({ assets, look, customizer }: { assets: PreviewAsset[]; look: "playful" | "studio"; customizer: boolean }) {
+export function LivePreview({ assets, look, customizer, soundUrls }: { assets: PreviewAsset[]; look: "playful" | "studio"; customizer: boolean; soundUrls?: Record<string, string> }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<AssetPlayer | null>(null);
   // Keeps the visitor's sound choice when they switch color styles.
@@ -39,6 +39,7 @@ export function LivePreview({ assets, look, customizer }: { assets: PreviewAsset
     const p = new AssetPlayer(hostRef.current!, ad, {
       autoplay: !isReduced,
       muted: mutedRef.current,
+      soundUrls,
       onTick: (t) => setTime(t),
       onStateChange: (s) => {
         setPlaying(s.playing);
@@ -50,7 +51,7 @@ export function LivePreview({ assets, look, customizer }: { assets: PreviewAsset
     return () => p.destroy();
   }, [ad]);
 
-  const cues = useMemo(() => ad.sounds.map((c) => ({ id: c.id, at: cueTime(c, ad.timeline), sound: c.sound.replace(/^synth:/, "") })), [ad]);
+  const cues = useMemo(() => ad.sounds.map((c) => ({ id: c.id, at: cueTime(c, ad.timeline), sound: c.sound.startsWith("snd_") ? "recorded" : c.sound.replace(/^synth:/, "") })), [ad]);
   const studio = look === "studio";
   const btn = studio
     ? "rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 font-mono text-xs uppercase tracking-wider hover:border-[var(--color-primary)]"

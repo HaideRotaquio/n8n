@@ -130,10 +130,10 @@ function Home({ tagline, description, items, categories, q, category, freePack, 
   );
 }
 
-function Product({ title, description, categoryLabel, assets, buy, facts, customizer }: ProductProps) {
+function Product({ title, description, categoryLabel, assets, buy, facts, customizer, soundUrls }: ProductProps) {
   return (
     <div className="grid gap-10 md:grid-cols-2">
-      <LivePreview assets={assets} look="playful" customizer={customizer} />
+      <LivePreview assets={assets} look="playful" customizer={customizer} soundUrls={soundUrls} />
       <div>
         {categoryLabel && <p className="inline-block rounded-full bg-[var(--color-accent)] px-3 py-1 text-xs font-extrabold uppercase tracking-wide">{categoryLabel}</p>}
         <h1 className="mt-3 text-5xl font-extrabold leading-tight text-[var(--color-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{title}</h1>

@@ -109,6 +109,46 @@ describe("export jobs", () => {
     expect(zipArt.storageKey).toMatch(new RegExp(`^brands/moodicons/assets/${item!.asset.id}/v1/`));
   }, 120_000);
 
+  it("mixes a stored library sound into the package and ships it with the Web Component", async () => {
+    const { prepareStoredSound, encodeWav } = await import("@sb/audio");
+    const { createSound, assignStoredSound } = await import("@sb/db");
+    const { newId } = await import("@sb/core");
+    const mood = (await getBrandBySlug(h.db, "moodicons"))!;
+    const [item] = await listAssets(h.db, [mood.id]);
+    const tone = Float32Array.from({ length: 24_000 }, (_, i) => 0.2 * Math.sin((2 * Math.PI * 660 * i) / 48_000));
+    const prepared = prepareStoredSound(encodeWav([tone], 48_000));
+    const id = newId("snd");
+    const put = await storage.put(`sounds/${id}.wav`, prepared.wav);
+    await createSound(h.db, ctx, { id, brandId: null, name: "Studio pop", source: "recorded", author: "Seven Brands", licenseRef: "Own recording", storageKey: put.key, bytes: put.bytes, sha256: put.sha256, durationMs: prepared.durationMs, sampleRate: prepared.sampleRate, loudnessLufs: prepared.loudnessLufs, peakDbfs: prepared.peakDbfs });
+    const cueId = item!.definition.sounds[0]!.id;
+    const saved = await assignStoredSound(h.db, ctx, { assetId: item!.asset.id, cueId, soundId: id });
+    expect(saved.version.version).toBe(2);
+    expect(saved.asset.status).toBe("in_review");
+    const job = await enqueueJob(h.db, ctx, { brandId: mood.id, kind: "export", brief: { assetId: item!.asset.id, formats: ["svg", "wav", "web-component"] } });
+    await drain({ db: h.db, storage }, quiet);
+    const done = (await getJob(h.db, job.id))!.job;
+    expect(done.status, done.error ?? "").toBe("succeeded");
+    const zipArt = (await getAssetDetail(h.db, item!.asset.id))!.exports.find((e) => e.format === "zip")!;
+    const zip = unzipSync((await storage.get(zipArt.storageKey))!);
+    expect(Object.keys(zip)).toContain(`sounds/${id}.wav`);
+    expect(strFromU8(zip["web-component/index.html"]!)).toContain(`"${id}":"../sounds/${id}.wav"`);
+    const cues = JSON.parse(strFromU8(zip[Object.keys(zip).find((k) => k.endsWith("-cues.json"))!]!));
+    expect(cues.cues.length).toBeGreaterThan(0);
+  }, 120_000);
+
+  it("refuses to export an asset whose stored sound is missing from the library", async () => {
+    const { saveAssetDefinition } = await import("@sb/db");
+    const mood = (await getBrandBySlug(h.db, "moodicons"))!;
+    const [, second] = await listAssets(h.db, [mood.id]);
+    const def = structuredClone(second!.definition);
+    def.sounds[0]!.sound = "snd_01AAAAAAAAAAAAAAAAAAAAAAAA" as never;
+    delete def.sounds[0]!.params;
+    await saveAssetDefinition(h.db, ctx, def);
+    const job = await enqueueJob(h.db, ctx, { brandId: mood.id, kind: "export", brief: { assetId: second!.asset.id, formats: ["svg"] } });
+    await drain({ db: h.db, storage }, quiet);
+    expect((await getJob(h.db, job.id))!.job.error).toMatch(/not in the sound library/);
+  });
+
   it("won't export another brand's asset", async () => {
     const mood = (await getBrandBySlug(h.db, "moodicons"))!;
     const sonic = (await getBrandBySlug(h.db, "sonicglyphs"))!;

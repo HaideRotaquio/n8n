@@ -318,9 +318,9 @@ describe("launch tooling and free products", () => {
     const a = await makeAsset("plan-a");
     const b = await makeAsset("plan-b");
     const { applyCatalogPlan } = await import("./index");
-    const plan = [
-      { slug: "plan-pack", title: "Plan pack", description: "", kind: "pack" as const, assetSlugs: ["plan-a", "plan-b"], prices: { personal: 500, commercial: 1500 } },
-      { slug: "plan-missing", title: "Missing", description: "", kind: "single" as const, assetSlugs: ["nope"], prices: { personal: 100 } },
+    const plan: import("./index").CatalogPlanItem[] = [
+      { slug: "plan-pack", title: "Plan pack", description: "", kind: "pack", assetSlugs: ["plan-a", "plan-b"], prices: { personal: 500, commercial: 1500 } },
+      { slug: "plan-missing", title: "Missing", description: "", kind: "single", assetSlugs: ["nope"], prices: { personal: 100 } },
     ];
     const first = await applyCatalogPlan(h.db, staff, moodiconsId, plan);
     expect(first).toEqual({ created: ["plan-pack"], existing: [], missingAssets: [{ slug: "plan-missing", assets: ["nope"] }] });

@@ -17,7 +17,7 @@ type Bg = keyof typeof BACKGROUNDS;
  * Universal Viewer: playback, restart, speed, sound (user-initiated), background,
  * color customization, size, fullscreen and a timeline scrubber. Honors reduced motion.
  */
-export function UniversalViewer({ definition, defaultBackground }: { definition: AssetDefinition; defaultBackground: Bg }) {
+export function UniversalViewer({ definition, defaultBackground, soundUrls }: { definition: AssetDefinition; defaultBackground: Bg; soundUrls?: Record<string, string> }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<AssetPlayer | null>(null);
@@ -37,6 +37,7 @@ export function UniversalViewer({ definition, defaultBackground }: { definition:
     const p = new AssetPlayer(host, definition, {
       autoplay: !isReduced,
       muted: true,
+      soundUrls,
       onTick: (t) => setTime(t),
       onStateChange: (s) => {
         setPlaying(s.playing);

@@ -45,6 +45,8 @@ export interface ProductProps {
   buy: ReactNode;
   facts: { label: string; value: string }[];
   customizer: boolean;
+  /** Preview URLs for library (`snd_…`) sounds. */
+  soundUrls?: Record<string, string>;
 }
 
 export interface Design {

@@ -43,6 +43,13 @@
       "when": 1795547631470,
       "tag": "0005_free_products",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795548483512,
+      "tag": "0006_sounds_catalog_jobs",
+      "breakpoints": true
     }
   ]
 }

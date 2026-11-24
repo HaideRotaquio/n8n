@@ -1,11 +1,13 @@
 import { can, type Permission } from "@sb/core";
-import { getAssetDetail, getDb } from "@sb/db";
+import { getAssetDetail, getDb, getSounds, listSounds, storedSoundIds } from "@sb/db";
 import { FORMAT_CAPABILITIES } from "@sb/asset";
 import { Badge, Card, Notice, PageHeader, Table } from "@sb/ui";
 import Link from "next/link";
 import { forbidden, notFound } from "next/navigation";
 import { getStorage, requirePageStaff } from "@/lib/server";
 import { AssetStatusBadge, ProvenanceBadge } from "../asset-bits";
+import { ActionForm } from "@/components/action-form";
+import { assignSoundAction } from "./actions";
 import { ExportButton, ReviewForm } from "./asset-forms";
 import { UniversalViewer } from "./universal-viewer";
 
@@ -28,6 +30,11 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
   const downloads = await Promise.all(
     d.exports.map(async (e) => ({ ...e, url: await storage.createDownloadUrl(e.storageKey, { expiresInSeconds: 300 }) })),
   );
+  // Stored sounds: short-lived signed links so the viewer plays exactly what buyers get.
+  const used = await getSounds(getDb(), storedSoundIds(ad));
+  const soundUrls = Object.fromEntries(await Promise.all(used.map(async (x) => [x.id, await storage.createDownloadUrl(x.storageKey, { expiresInSeconds: 3600, filename: `${x.id}.wav` })] as const)));
+  const library = allowed("asset.write") && ad.sounds.length > 0 ? (await listSounds(getDb(), [d.asset.brandId])).map((r) => r.sound) : [];
+  const soundName = new Map(used.map((x) => [x.id, x.name]));
   const canReview = allowed("asset.review") && !["published", "archived"].includes(d.asset.status);
 
   return (
@@ -50,7 +57,7 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           <Card title="Preview">
-            <UniversalViewer definition={ad} defaultBackground={d.brand.slug === "sonicglyphs" ? "dark" : "cream"} />
+            <UniversalViewer definition={ad} soundUrls={soundUrls} defaultBackground={d.brand.slug === "sonicglyphs" ? "dark" : "cream"} />
           </Card>
 
           <Card title="Exports" actions={allowed("production.run") ? <ExportButton assetId={d.asset.id} /> : undefined}>
@@ -113,10 +120,24 @@ export default async function AssetPage({ params }: { params: Promise<{ id: stri
             {canReview ? <ReviewForm assetId={d.asset.id} canApprove={!!qa?.passed} /> : <p className="text-sm text-[var(--color-muted-text)]">You can't review this asset.</p>}
           </Card>
 
+          {library.length > 0 && (
+            <Card title="Use a library sound">
+              <ActionForm action={assignSoundAction.bind(null, d.asset.id)} submit="Replace sound (new version)">
+                <label className="block text-sm">Cue
+                  <select name="cueId" className="mt-1 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">{ad.sounds.map((c) => <option key={c.id} value={c.id}>{c.id} — {c.sound.replace("synth:", "")}</option>)}</select>
+                </label>
+                <label className="block text-sm">Sound
+                  <select name="soundId" className="mt-1 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">{library.map((x) => <option key={x.id} value={x.id}>{x.name} ({(x.durationMs / 1000).toFixed(1)} s · {x.licenseRef})</option>)}</select>
+                </label>
+                <p className="text-xs text-[var(--color-muted-text)]">Creates a new version that needs review and a fresh export before buyers get it.</p>
+              </ActionForm>
+            </Card>
+          )}
+
           <Card title="Details">
             <dl className="space-y-2 text-sm">
               <div><dt className="text-[var(--color-muted-text)]">Accessible label</dt><dd>{ad.a11y.label}</dd></div>
-              <div><dt className="text-[var(--color-muted-text)]">Sounds</dt><dd>{ad.sounds.map((s) => s.sound.replace("synth:", "")).join(", ") || "none"}</dd></div>
+              <div><dt className="text-[var(--color-muted-text)]">Sounds</dt><dd>{ad.sounds.map((s) => `${s.id}: ${s.sound.startsWith("snd_") ? `${soundName.get(s.sound) ?? s.sound} (library)` : s.sound.replace("synth:", "")}`).join(", ") || "none"}</dd></div>
               <div><dt className="text-[var(--color-muted-text)]">Tags</dt><dd>{ad.tags.join(", ")}</dd></div>
               <div><dt className="text-[var(--color-muted-text)]">Checksum</dt><dd className="truncate font-mono text-xs">{d.current.checksum}</dd></div>
               {d.current.productionJobId && (

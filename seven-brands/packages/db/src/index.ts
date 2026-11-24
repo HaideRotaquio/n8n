@@ -13,3 +13,6 @@ export * from "./repositories/catalog";
 export * from "./repositories/commerce";
 export type { Collection, Product, Price, CheckoutSession, Order, OrderItem, WebhookEvent, License, Entitlement, Download, RefundRequest } from "./schema";
 export { CATALOG_STATUSES, PRODUCT_KINDS, PAYMENT_PROVIDERS, ORDER_STATUSES, REFUND_STATUSES } from "./schema";
+export * from "./repositories/sounds";
+export type { SoundAsset } from "./schema";
+export { SOUND_SOURCES } from "./schema";

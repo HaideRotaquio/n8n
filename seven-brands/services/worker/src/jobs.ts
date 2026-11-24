@@ -17,6 +17,8 @@ import {
   sumExpenses,
   type Database,
   type ProductionJob,
+  getSounds,
+  storedSoundIds,
 } from "@sb/db";
 import {
   ALL_FORMATS,
@@ -29,6 +31,7 @@ import {
   renderPng,
   type ExportFormat,
 } from "@sb/export";
+import { loadStoredSound } from "@sb/audio";
 import { RIGS } from "@sb/rigs";
 import type { StorageDriver } from "@sb/storage";
 import { z } from "zod";
@@ -151,6 +154,17 @@ async function runExportJob(job: ProductionJob, deps: JobDeps) {
   const base = `brands/${detail.brand.slug}/assets/${detail.asset.id}/v${detail.current.version}`;
 
   // Individual preview/delivery files plus the complete package.
+  // Stored sounds: every `snd_…` cue must point at a library sound with a license record.
+  const stored: Record<string, Float32Array> = {};
+  const ids = storedSoundIds(ad);
+  const sounds = await getSounds(deps.db, ids);
+  for (const id of ids) {
+    const snd = sounds.find((x) => x.id === id);
+    if (!snd) throw new PermanentJobError(`Asset uses sound ${id}, which is not in the sound library`);
+    const bytes = await deps.storage.get(snd.storageKey);
+    if (!bytes) throw new PermanentJobError(`Sound file for ${snd.name} (${id}) is missing from storage`);
+    stored[id] = loadStoredSound(bytes);
+  }
   // Without a format list, every preview file is produced. With one, only those (the package is always built).
   const want = (f: string) => !brief.data.formats || (brief.data.formats as string[]).includes(f);
   const files: { format: string; name: string; data: Uint8Array; contentType: string }[] = [];
@@ -159,8 +173,8 @@ async function runExportJob(job: ProductionJob, deps: JobDeps) {
   if (want("png")) files.push({ format: "png", name: `${ad.slug}-512.png`, data: renderPng(ad, ad.a11y.reducedMotionFrame, { size: 512 }), contentType: "image/png" });
   if (want("gif")) files.push({ format: "gif", name: `${ad.slug}.gif`, data: await exportGif(ad), contentType: "image/gif" });
   if (want("lottie")) files.push({ format: "lottie", name: `${ad.slug}.lottie.json`, data: enc(JSON.stringify(exportLottie(ad))), contentType: "application/json" });
-  if (want("mp4")) files.push({ format: "mp4", name: `${ad.slug}.mp4`, data: await exportMp4(ad, { size: 512 }), contentType: "video/mp4" });
-  const pkg = await buildPackage(ad, { brandName: detail.brand.name, formats: brief.data.formats });
+  if (want("mp4")) files.push({ format: "mp4", name: `${ad.slug}.mp4`, data: await exportMp4(ad, { size: 512 }, stored), contentType: "video/mp4" });
+  const pkg = await buildPackage(ad, { brandName: detail.brand.name, formats: brief.data.formats, stored });
   files.push({ format: "zip", name: `${ad.slug}-v${detail.current.version}.zip`, data: pkg.zip, contentType: "application/zip" });
 
   const artifacts = [];

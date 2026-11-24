@@ -229,8 +229,9 @@ export function scriptSafeJson(value: unknown): string {
   return JSON.stringify(value).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 }
 
-export function exportWebComponentHtml(ad: AssetDefinition, opts: ExportOptions = {}): string {
+export function exportWebComponentHtml(ad: AssetDefinition, opts: ExportOptions & { soundUrls?: Record<string, string> } = {}): string {
   const tokens = opts.tokens ? ` tokens='${JSON.stringify(opts.tokens).replace(/'/g, "&#39;")}'` : "";
+  const sounds = opts.soundUrls && Object.keys(opts.soundUrls).length ? `\n<script type="application/daos-sounds+json">${scriptSafeJson(opts.soundUrls)}</script>` : "";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -242,7 +243,7 @@ export function exportWebComponentHtml(ad: AssetDefinition, opts: ExportOptions 
 </head>
 <body>
 <daos-asset id="asset" autoplay${tokens}>
-<script type="application/json">${scriptSafeJson(ad)}</script>
+<script type="application/json">${scriptSafeJson(ad)}</script>${sounds}
 </daos-asset>
 <button type="button" onclick="document.getElementById('asset').unmute()">Turn sound on</button>
 </body>
@@ -335,11 +336,18 @@ export async function buildPackage(ad: AssetDefinition, opts: PackageOptions): P
     add(`audio/${slug}.wav`, encodeWav([track.samples], track.sampleRate));
     add(`audio/${slug}-cues.json`, JSON.stringify({ durationMs: ad.timeline.duration, cues: track.cues, loudnessLufs: round(track.normalization.loudness), peakDbfs: round(track.normalization.peakDbfs) }, null, 2));
   }
+  // Stored (non-synth) sounds travel with the package so components can play them offline.
+  const soundUrls: Record<string, string> = {};
+  for (const [id, samples] of Object.entries(opts.stored ?? {})) {
+    if (!/^snd_[0-9A-Z]{26}$/.test(id)) continue;
+    add(`sounds/${id}.wav`, encodeWav([samples], DEFAULT_SAMPLE_RATE));
+    soundUrls[id] = `../sounds/${id}.wav`;
+  }
   if (formats.has("web-component") || formats.has("react")) {
     const bundle = await buildPlayerBundle();
     if (formats.has("web-component")) {
       add("web-component/daos-player.js", bundle);
-      add("web-component/index.html", exportWebComponentHtml(ad, opts));
+      add("web-component/index.html", exportWebComponentHtml(ad, { ...opts, soundUrls }));
     }
     if (formats.has("react")) {
       const r = exportReact(ad);
