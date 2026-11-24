@@ -24,6 +24,9 @@ try {
   await upsertPrice(h.db, ctx, { productId: product.id, licenseType: "personal", amountCents: 500 });
   await upsertPrice(h.db, ctx, { productId: product.id, licenseType: "commercial", amountCents: 1500 });
   await publishProduct(h.db, ctx, product.id);
+  const free = await createProduct(h.db, ctx, { brandId: mood.id, slug: "free-heart", title: "Free Heart", description: "Free sample.", kind: "single", assetIds: [saved.asset.id] });
+  await upsertPrice(h.db, ctx, { productId: free.id, licenseType: "personal", amountCents: 0 });
+  await publishProduct(h.db, ctx, free.id);
   console.log("E2E storefront data ready.");
 } finally {
   await h.close();

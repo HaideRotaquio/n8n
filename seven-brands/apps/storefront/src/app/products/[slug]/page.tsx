@@ -2,7 +2,7 @@ import { LICENSE_TYPE_LABELS, type LicenseType } from "@sb/core";
 import { getDb, getPublishedProduct } from "@sb/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { AssetPreview } from "@/components/asset-preview";
+import { designFor } from "@/designs";
 import { formatMoney, getCommerce, getShopper, requireStore } from "@/lib/store";
 import { BuyForm } from "./buy-form";
 
@@ -22,55 +22,41 @@ const LICENSE_HINT: Record<LicenseType, string> = {
   enterprise: "Unlimited people in one organization",
 };
 
+const FORMATS = "SVG, animated SVG, PNG, GIF, MP4, WebM, WAV, React, Web Component";
+
 export default async function ProductPage({ params }: Props) {
   const store = await requireStore();
   const { slug } = await params;
   const detail = await getPublishedProduct(getDb(), store.brand.id, slug);
-  if (!detail) notFound();
+  if (!detail || detail.assets.length === 0) notFound();
   const shopper = await getShopper();
-  const commerce = getCommerce();
-  const options = detail.prices
-    .filter((p) => p.amountCents > 0)
-    .map((p) => ({
-      licenseType: p.licenseType,
-      currency: p.currency,
-      label: LICENSE_TYPE_LABELS[p.licenseType as LicenseType] ?? p.licenseType,
-      hint: LICENSE_HINT[p.licenseType as LicenseType] ?? "",
-      price: formatMoney(p.amountCents, p.currency),
-    }));
-  const [first, ...rest] = detail.assets;
-
+  const options = detail.prices.map((p) => ({
+    licenseType: p.licenseType,
+    currency: p.currency,
+    label: LICENSE_TYPE_LABELS[p.licenseType as LicenseType] ?? p.licenseType,
+    hint: LICENSE_HINT[p.licenseType as LicenseType] ?? "",
+    price: p.amountCents === 0 ? "Free" : formatMoney(p.amountCents, p.currency),
+    free: p.amountCents === 0,
+  }));
+  const first = detail.assets[0]!.definition;
+  const cues = first.sounds.length;
+  const categories = new Map(store.brand.config.catalog.categories.map((c) => [c.slug, c.label]));
+  const { Product } = designFor(store.brand);
+  const designs = new Set(detail.assets.map((a) => a.asset.name.replace(/\s*\([^)]*\)$/, ""))).size;
   return (
-    <div className="grid gap-8 md:grid-cols-2">
-      <div>
-        {first && <AssetPreview ad={first.definition} />}
-        {rest.length > 0 && (
-          <ul className="mt-3 grid grid-cols-4 gap-2" aria-label="Included assets">
-            {rest.map((a) => (
-              <li key={a.asset.id}>
-                <AssetPreview ad={a.definition} playOn="hover" className="p-2" />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <div>
-        <h1 className="text-3xl font-bold">{detail.product.title}</h1>
-        {detail.product.description && <p className="mt-3 whitespace-pre-line text-[var(--color-muted-text)]">{detail.product.description}</p>}
-        <p className="mt-3 text-sm text-[var(--color-muted-text)]">
-          {detail.assets.length} {detail.assets.length === 1 ? "asset" : "assets"} · SVG, animated SVG, PNG, GIF, MP4, WebM, sound (WAV), React and Web Component
-        </p>
-        <div className="mt-6">
-          {options.length === 0 ? (
-            <p>Not available for purchase right now.</p>
-          ) : (
-            <BuyForm slug={slug} options={options} signedIn={!!shopper} checkoutAvailable={!!commerce.active} />
-          )}
-        </div>
-        <p className="mt-4 text-xs text-[var(--color-muted-text)]">
-          Payments are handled by our reseller (Merchant of Record), who also handles sales tax/VAT. Downloads and your license certificate appear in your library right after payment.
-        </p>
-      </div>
-    </div>
+    <Product
+      title={detail.product.title}
+      description={detail.product.description}
+      categoryLabel={first.category ? (categories.get(first.category) ?? first.category) : null}
+      assets={detail.assets.map((a) => ({ id: a.asset.id, name: a.asset.name, definition: a.definition }))}
+      customizer={store.brand.config.features.customizer}
+      facts={[
+        { label: "Files", value: designs > 1 ? `${detail.assets.length} icons (${designs} designs)` : `${detail.assets.length} ${detail.assets.length === 1 ? "icon" : "color styles"}` },
+        { label: "Loop", value: `${(first.timeline.duration / 1000).toFixed(1)} s` },
+        { label: "Sound", value: cues ? `${cues} synced cue${cues === 1 ? "" : "s"}` : "none" },
+        { label: "Formats", value: FORMATS },
+      ]}
+      buy={<BuyForm slug={slug} options={options} signedIn={!!shopper} checkoutAvailable={!!getCommerce().active} />}
+    />
   );
 }

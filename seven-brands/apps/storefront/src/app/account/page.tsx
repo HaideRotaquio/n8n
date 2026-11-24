@@ -14,7 +14,7 @@ const ERRORS: Record<string, string> = {
   rate_limited: "Download limit reached. Please try again in an hour, or contact support.",
 };
 
-export default async function AccountPage({ searchParams }: { searchParams: Promise<{ purchased?: string; error?: string }> }) {
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ purchased?: string; claimed?: string; error?: string }> }) {
   const shopper = await requireShopper("/account");
   const sp = await searchParams;
   const db = getDb();
@@ -34,6 +34,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         : "Thank you! We're confirming your payment — your purchase appears here within a minute. Refresh to check.";
   }
 
+  if (sp.claimed) purchaseNotice = "It's yours! Your free download and license are below.";
   return (
     <div className="space-y-8">
       <div>

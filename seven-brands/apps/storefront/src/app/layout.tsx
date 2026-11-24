@@ -1,8 +1,18 @@
+import "@fontsource/baloo-2/latin-700.css";
+import "@fontsource/baloo-2/latin-800.css";
+import "@fontsource/nunito/latin-400.css";
+import "@fontsource/nunito/latin-600.css";
+import "@fontsource/nunito/latin-700.css";
+import "@fontsource/nunito/latin-800.css";
+import "@fontsource/space-grotesk/latin-500.css";
+import "@fontsource/space-grotesk/latin-700.css";
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-500.css";
+import "@fontsource/inter/latin-600.css";
 import { themeToCssVars } from "@sb/core";
 import type { Metadata } from "next";
-import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { SignOutButton } from "@/components/sign-out-button";
+import { designFor } from "@/designs";
 import { getCommerce, getShopper, getStore } from "@/lib/store";
 import "./globals.css";
 
@@ -28,51 +38,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const active = getCommerce().active;
   const c = store.brand.config;
   const vars = themeToCssVars(c.theme);
-  // Fully rounded brands: keep cards readable (pills only suit small controls). Phase 4 designs replace this.
+  // Fully rounded brands: keep shared UI (forms, cards) readable; the brand design sets its own shapes.
   if (vars["--radius"] === "9999px") vars["--radius"] = "20px";
+  const { Shell } = designFor(store.brand);
+  const dark = c.layout === "studio-dark";
   return (
-    <html lang="en">
-      <body className="flex min-h-screen flex-col antialiased" style={vars as CSSProperties}>
-        {active?.testMode && (
-          <p className="bg-amber-300 px-4 py-1 text-center text-xs font-medium text-amber-950" role="status">
-            Test mode — no real payments are taken.
-          </p>
-        )}
-        <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-            <Link href="/" className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
-              {c.name}
-            </Link>
-            <nav aria-label="Main" className="flex items-center gap-4 text-sm">
-              <Link href="/">Catalog</Link>
-              {shopper ? (
-                <>
-                  <Link href="/account">Your library</Link>
-                  <SignOutButton />
-                </>
-              ) : (
-                <>
-                  <Link href="/sign-in">Sign in</Link>
-                  <Link href="/sign-up" className="rounded-[var(--radius)] bg-[var(--color-primary)] px-3 py-1.5 font-medium text-[var(--color-primary-text)]">
-                    Create account
-                  </Link>
-                </>
-              )}
-            </nav>
-          </div>
-        </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-        <footer className="border-t border-[var(--color-border)] px-4 py-6 text-center text-sm text-[var(--color-muted-text)]">
-          <p>
-            {c.name} · {c.tagline}
-          </p>
-          <p className="mt-1">
-            <Link href="/licenses/verify" className="underline">
-              Verify a license
-            </Link>{" "}
-            · A Seven Brands company
-          </p>
-        </footer>
+    <html lang="en" style={{ colorScheme: dark ? "dark" : "light" }}>
+      <body className="flex min-h-screen flex-col antialiased" style={vars as CSSProperties} data-layout={c.layout}>
+        <Shell brandName={c.name} tagline={c.tagline} signedIn={!!shopper} testMode={!!active?.testMode}>
+          {children}
+        </Shell>
       </body>
     </html>
   );

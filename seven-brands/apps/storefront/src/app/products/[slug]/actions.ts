@@ -1,7 +1,7 @@
 "use server";
 
 import { LICENSE_TYPE_LABELS, type LicenseType, AppError } from "@sb/core";
-import { attachProviderCheckout, createCheckoutSession, getDb, markCheckoutFailed } from "@sb/db";
+import { attachProviderCheckout, claimFreeProduct, createCheckoutSession, getDb, getPublishedProduct, markCheckoutFailed } from "@sb/db";
 import { redirect } from "next/navigation";
 import { getCommerce, requireShopper } from "@/lib/store";
 
@@ -13,12 +13,25 @@ export interface BuyState {
 export async function startCheckout(_prev: BuyState, form: FormData): Promise<BuyState> {
   const slug = String(form.get("slug") ?? "");
   const shopper = await requireShopper(`/products/${slug}`);
-  const provider = getCommerce().active;
-  if (!provider) return { error: "Checkout is not available right now." };
   const [licenseType, currency] = String(form.get("license") ?? "").split(":");
   if (!licenseType || !currency) return { error: "Choose a license." };
-
   const db = getDb();
+
+  // Free licenses skip checkout entirely.
+  const detail = await getPublishedProduct(db, shopper.brand.id, slug);
+  const price = detail?.prices.find((p) => p.licenseType === licenseType && p.currency === currency);
+  if (price?.amountCents === 0) {
+    try {
+      await claimFreeProduct(db, { brandId: shopper.brand.id, customerId: shopper.customer.id, productSlug: slug, licenseType });
+    } catch (err) {
+      if (err instanceof AppError) return { error: err.message };
+      throw err;
+    }
+    redirect("/account?claimed=1");
+  }
+
+  const provider = getCommerce().active;
+  if (!provider) return { error: "Checkout is not available right now." };
   let url: string;
   let sessionId: string | null = null;
   try {

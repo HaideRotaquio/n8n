@@ -1,37 +1,41 @@
-import { listPublishedProducts, getDb } from "@sb/db";
-import { EmptyState } from "@sb/ui";
-import Link from "next/link";
-import { AssetPreview } from "@/components/asset-preview";
-import { formatMoney, requireStore } from "@/lib/store";
+import { designFor } from "@/designs";
+import { catalogItems, sortForShop } from "@/lib/catalog";
+import { requireStore } from "@/lib/store";
 
-export default async function CatalogPage() {
+export default async function CatalogPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string }> }) {
   const { brand } = await requireStore();
-  const products = await listPublishedProducts(getDb(), brand.id);
-  const c = brand.config;
+  const sp = await searchParams;
+  const q = (sp.q ?? "").trim().slice(0, 80);
+  const all = sortForShop(await catalogItems(brand));
+  // Categories that actually have products, in the brand's own order.
+  const counts = new Map<string, number>();
+  for (const i of all) if (i.category) counts.set(i.category, (counts.get(i.category) ?? 0) + 1);
+  const categories = brand.config.catalog.categories.filter((c) => counts.has(c.slug)).map((c) => ({ ...c, count: counts.get(c.slug)! }));
+  for (const [slug, count] of counts) if (!categories.some((c) => c.slug === slug)) categories.push({ slug, label: slug.replace(/-/g, " "), count });
+  const category = sp.category && counts.has(sp.category) ? sp.category : null;
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const items = all.filter((i) => (!category || i.category === category) && words.every((w) => i.searchText.includes(w)));
+  const { Home } = designFor(brand);
   return (
-    <div>
-      <section className="mb-10">
-        <h1 className="text-3xl font-bold sm:text-4xl">{c.tagline}</h1>
-        {c.description && <p className="mt-3 max-w-2xl text-[var(--color-muted-text)]">{c.description}</p>}
-      </section>
-      {products.length === 0 ? (
-        <EmptyState title="The catalog is being prepared">New assets are on their way. Check back soon.</EmptyState>
-      ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-label="Products">
-          {products.map((p) => (
-            <li key={p.product.id}>
-              <Link href={`/products/${p.product.slug}`} className="group block rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:border-[var(--color-accent)]">
-                {p.cover && <AssetPreview ad={p.cover} playOn="hover" />}
-                <p className="mt-3 font-medium">{p.product.title}</p>
-                <p className="text-sm text-[var(--color-muted-text)]">
-                  {p.product.kind === "pack" ? `${p.assetCount} assets · ` : ""}
-                  {p.minPriceCents !== null && p.currency ? `from ${formatMoney(p.minPriceCents, p.currency)}` : ""}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <Home
+      tagline={brand.config.tagline}
+      description={brand.config.description}
+      items={items}
+      categories={categories}
+      q={q}
+      category={category}
+      freePack={all.find((i) => i.isFree) ?? null}
+      showcase={showcase(all)}
+    />
   );
+}
+
+/** Six small products for the hero, one per category where possible (no free pack, no bundles). */
+function showcase(all: Awaited<ReturnType<typeof catalogItems>>) {
+  const singles = all.filter((i) => !i.isFree && i.assetCount <= 4);
+  const picked = new Map<string, (typeof singles)[number]>();
+  for (const i of singles) if (i.category && !picked.has(i.category)) picked.set(i.category, i);
+  const out = [...picked.values()];
+  for (const i of singles) if (out.length < 6 && !out.includes(i)) out.push(i);
+  return out.slice(0, 6);
 }

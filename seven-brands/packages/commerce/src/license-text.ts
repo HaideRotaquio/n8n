@@ -109,3 +109,10 @@ export function personalizePackage(zip: Uint8Array, licenseText: string): Uint8A
   }
   return zipSync(files, { level: 6 });
 }
+
+/** Plain-language license summary for comparison tables (same source as LICENSE.txt). */
+export function licenseSummary(type: string): { summary: string; allowed: string[]; seats: string } | null {
+  return GRANTS[type as LicenseType] ?? null;
+}
+
+export const LICENSE_RESTRICTIONS: readonly string[] = NOT_ALLOWED;

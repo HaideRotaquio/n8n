@@ -23,13 +23,15 @@ test("storefront is themed per brand and lists only that brand's products", asyn
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Moodicons", exact: true })).toBeVisible();
   await expect(page.getByText(/Test mode/)).toBeVisible();
-  await expect(page.getByRole("link", { name: /Beating Heart/ })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Products" }).getByRole("link", { name: /Beating Heart/ })).toBeVisible();
   const bg = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue("--color-primary").trim());
   expect(bg).toMatch(/^#/);
 
   await page.goto(`${OTHER_STORE_URL}/`);
   await expect(page.getByRole("link", { name: "SonicGlyphs", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Beating Heart/ })).toHaveCount(0);
+  // A different layout family, not a color swap.
+  expect(await page.evaluate(() => document.body.dataset.layout)).toBe("studio-dark");
   expect((await page.goto(`${OTHER_STORE_URL}/products/beating-heart`))!.status()).toBe(404);
   expect((await page.goto(`${UNKNOWN_HOST_URL}/`))!.status()).toBe(404);
 });
@@ -98,6 +100,35 @@ test("another customer can't use someone else's entitlement, and sessions don't 
   // Signed in at Moodicons, but not at SonicGlyphs.
   await page.goto(`${OTHER_STORE_URL}/account`);
   await page.waitForURL(/\/sign-in/);
+});
+
+test("search, categories and the live preview (sound off by default)", async ({ page }) => {
+  await page.goto("/?q=heart");
+  await expect(page.getByRole("list", { name: "Products" }).getByRole("link")).toHaveCount(2);
+  await page.goto("/?q=zebra");
+  await expect(page.getByText(/No icons match/)).toBeVisible();
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Categories" }).getByRole("link").nth(1).click();
+  await expect(page).toHaveURL(/category=/);
+  await page.goto("/products/beating-heart");
+  await expect(page.getByTestId("live-preview").locator("svg")).toBeVisible();
+  const sound = page.getByRole("button", { name: /sound/i });
+  await expect(sound).toHaveAttribute("aria-pressed", "false");
+  await page.goto("/help/licenses");
+  await expect(page.getByRole("heading", { name: "Commercial" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Enterprise" })).toHaveCount(0); // Moodicons doesn't sell it
+});
+
+test("free products are claimed without checkout and arrive with a license", async ({ page }) => {
+  await page.goto("/sign-in?next=/products/free-heart");
+  await page.getByLabel("Email").fill(BUYER.email);
+  await page.getByLabel("Password").fill(BUYER.password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL(/free-heart/);
+  await page.getByRole("button", { name: "Get it free" }).click();
+  await page.waitForURL(/\/account\?claimed=1/);
+  await expect(page.getByText("It's yours!")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Free Heart" })).toBeVisible();
 });
 
 test("test checkout can be cancelled and unknown sessions are hidden", async ({ page }) => {
