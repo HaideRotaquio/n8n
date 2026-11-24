@@ -6,6 +6,9 @@ import { CURRENT_PHASE, NAV } from "@/lib/nav";
 import { requirePageStaff } from "@/lib/server";
 import { SignOutButton } from "./sign-out-button";
 
+/** Every dashboard page depends on the signed-in user. */
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const staff = await requirePageStaff("overview.read");
   // Show a section if the user holds its permission globally or on any brand.

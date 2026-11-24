@@ -30,7 +30,10 @@ export function getStorage(): StorageDriver {
 }
 
 export async function getStaff(): Promise<StaffContext | null> {
-  return getStaffContext(getAuth(), getDb(), await headers());
+  // Read request headers first: it marks the route dynamic before any DB access,
+  // so builds never try to connect to the database.
+  const h = await headers();
+  return getStaffContext(getAuth(), getDb(), h);
 }
 
 /**

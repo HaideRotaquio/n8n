@@ -4,6 +4,7 @@ import { getStaff } from "@/lib/server";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
+export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
   if (await getStaff()) redirect("/");
