@@ -1,0 +1,27 @@
+{
+  "name": "seven-brands",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.12.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test --concurrency=1",
+    "db:generate": "pnpm --filter @sb/db generate",
+    "db:migrate": "pnpm --filter @sb/db migrate",
+    "db:seed": "pnpm --filter @sb/db seed",
+    "create-owner": "pnpm --filter @sb/auth create-owner",
+    "e2e": "pnpm --filter @sb/admin build && pnpm --filter @sb/admin e2e"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "turbo": "^2.11.13",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.1"
+  }
+}

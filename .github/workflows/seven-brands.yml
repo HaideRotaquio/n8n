@@ -1,0 +1,61 @@
+name: Seven Brands CI
+
+on:
+  push:
+    paths: ["seven-brands/**", ".github/workflows/seven-brands.yml"]
+  pull_request:
+    paths: ["seven-brands/**", ".github/workflows/seven-brands.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seven-brands-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: seven-brands
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: daos
+          POSTGRES_PASSWORD: daos_dev_only
+          POSTGRES_DB: daos_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U daos" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://daos:daos_dev_only@localhost:5432/daos_test
+      E2E_DATABASE_URL: postgres://daos:daos_dev_only@localhost:5432/daos_e2e_test
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: seven-brands/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install S3 emulator for storage tests
+        run: |
+          pip install --quiet "moto[server]"
+          echo "MOTO_SERVER_BIN=$(which moto_server)" >> "$GITHUB_ENV"
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Create E2E database
+        run: PGPASSWORD=daos_dev_only psql -h localhost -U daos -d daos_test -c "CREATE DATABASE daos_e2e_test"
+      - name: Install Playwright browser
+        run: pnpm --filter @sb/admin exec playwright install --with-deps chromium
+      - run: pnpm e2e
+        env:
+          DATABASE_URL: postgres://daos:daos_dev_only@localhost:5432/daos_e2e_test

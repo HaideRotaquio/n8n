@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@source "../../../../packages/ui/src";
+
+/* Parent-company (DAOS) admin theme. Brand themes are applied per-brand via the same variables. */
+:root {
+  --color-background: #f8f9fb;
+  --color-surface: #ffffff;
+  --color-text: #111827;
+  --color-muted-text: #4b5563;
+  --color-primary: #1f2937;
+  --color-primary-text: #ffffff;
+  --color-accent: #6366f1;
+  --color-border: #e5e7eb;
+  --radius: 8px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0b0f17;
+    --color-surface: #111827;
+    --color-text: #f3f4f6;
+    --color-muted-text: #9ca3af;
+    --color-primary: #e5e7eb;
+    --color-primary-text: #111827;
+    --color-accent: #818cf8;
+    --color-border: #1f2937;
+    color-scheme: dark;
+  }
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}

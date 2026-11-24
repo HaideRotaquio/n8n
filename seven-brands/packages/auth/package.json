@@ -1,0 +1,22 @@
+{
+  "name": "@sb/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts", "./next": "./src/next.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "create-owner": "tsx --env-file-if-exists=../../.env src/cli/create-owner.ts"
+  },
+  "dependencies": {
+    "@sb/core": "workspace:*",
+    "@sb/db": "workspace:*",
+    "better-auth": "^1.7.28",
+    "drizzle-orm": "^0.45.4",
+    "react": "^19.3.1"
+  }
+}
