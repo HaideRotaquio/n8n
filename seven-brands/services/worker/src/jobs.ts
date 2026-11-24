@@ -150,13 +150,14 @@ async function runExportJob(job: ProductionJob, deps: JobDeps) {
   const base = `brands/${detail.brand.slug}/assets/${detail.asset.id}/v${detail.current.version}`;
 
   // Individual preview/delivery files plus the complete package.
-  const files: { format: string; name: string; data: Uint8Array; contentType: string }[] = [
-    { format: "svg", name: `${ad.slug}.svg`, data: enc(exportStaticSvg(ad)), contentType: "image/svg+xml" },
-    { format: "svg-animated", name: `${ad.slug}-animated.svg`, data: enc(exportAnimatedSvg(ad)), contentType: "image/svg+xml" },
-    { format: "png", name: `${ad.slug}-512.png`, data: renderPng(ad, ad.a11y.reducedMotionFrame, { size: 512 }), contentType: "image/png" },
-    { format: "gif", name: `${ad.slug}.gif`, data: await exportGif(ad), contentType: "image/gif" },
-    { format: "mp4", name: `${ad.slug}.mp4`, data: await exportMp4(ad, { size: 512 }), contentType: "video/mp4" },
-  ];
+  // Without a format list, every preview file is produced. With one, only those (the package is always built).
+  const want = (f: string) => !brief.data.formats || (brief.data.formats as string[]).includes(f);
+  const files: { format: string; name: string; data: Uint8Array; contentType: string }[] = [];
+  if (want("svg")) files.push({ format: "svg", name: `${ad.slug}.svg`, data: enc(exportStaticSvg(ad)), contentType: "image/svg+xml" });
+  if (want("svg-animated")) files.push({ format: "svg-animated", name: `${ad.slug}-animated.svg`, data: enc(exportAnimatedSvg(ad)), contentType: "image/svg+xml" });
+  if (want("png")) files.push({ format: "png", name: `${ad.slug}-512.png`, data: renderPng(ad, ad.a11y.reducedMotionFrame, { size: 512 }), contentType: "image/png" });
+  if (want("gif")) files.push({ format: "gif", name: `${ad.slug}.gif`, data: await exportGif(ad), contentType: "image/gif" });
+  if (want("mp4")) files.push({ format: "mp4", name: `${ad.slug}.mp4`, data: await exportMp4(ad, { size: 512 }), contentType: "video/mp4" });
   const pkg = await buildPackage(ad, { brandName: detail.brand.name, formats: brief.data.formats });
   files.push({ format: "zip", name: `${ad.slug}-v${detail.current.version}.zip`, data: pkg.zip, contentType: "application/zip" });
 

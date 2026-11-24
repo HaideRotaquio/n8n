@@ -7,6 +7,7 @@ export * from "./moodicons-face";
 export * from "./moodicons-symbols";
 export * from "./sonicglyphs";
 export { heartPath } from "./util";
+export * from "./launch";
 
 export interface RigInfo {
   id: string;

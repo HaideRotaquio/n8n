@@ -146,3 +146,20 @@ export async function collectionStatusAction(collectionId: string, status: "publ
   revalidatePath("/catalog");
   return { ok: true, message: `Collection is now ${status}.` };
 }
+
+/** Creates the launch catalog as drafts (with suggested prices). Publishing stays a separate, human step. */
+export async function launchDraftsAction(brandId: string, _prev: ActionState): Promise<ActionState> {
+  const db = getDb();
+  const [b] = await db.select().from(schema.brand).where(eq(schema.brand.id, brandId));
+  const staff = b ? await getStaff() : null;
+  if (!b || !staff || !can(staff.grants, "catalog.write", brandId) || !can(staff.grants, "pricing.write", brandId)) return fail("Needs catalog.write and pricing.write for this brand.");
+  const { launchCatalog } = await import("@sb/rigs");
+  const { applyCatalogPlan } = await import("@sb/db");
+  const r = await applyCatalogPlan(db, await requestAuditContext(staff.user.id), brandId, launchCatalog(b.slug));
+  revalidatePath("/catalog");
+  const parts = [`${r.created.length} draft products created`, `${r.existing.length} already existed`];
+  if (r.missingAssets.length) {
+    return { ok: r.created.length > 0, message: `${parts.join(", ")}. ${r.missingAssets.length} skipped: their assets don't exist yet. Run the brand's rig jobs (all palettes) in Production, then try again.`, issues: r.missingAssets.slice(0, 5).map((m) => `${m.slug}: ${m.assets.slice(0, 3).join(", ")}${m.assets.length > 3 ? "…" : ""}`) };
+  }
+  return { ok: true, message: `${parts.join(", ")}. Review prices, approve and export assets, then publish.` };
+}

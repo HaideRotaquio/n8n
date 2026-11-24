@@ -40,7 +40,7 @@ test("owner exports, prices and publishes a product", async ({ page }) => {
   await page.getByLabel(/Commerce Heart/).check();
   await page.getByRole("button", { name: "Create draft product" }).click();
   await page.waitForURL(/\/catalog\/prd_/);
-  await expect(page.getByText("Add at least one active price above zero")).toBeVisible();
+  await expect(page.getByText("Add at least one active price")).toBeVisible();
 
   await page.getByLabel("License").selectOption("personal");
   await page.getByLabel("Amount (USD)").fill("7");

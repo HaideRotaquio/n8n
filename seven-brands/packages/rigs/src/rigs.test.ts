@@ -27,3 +27,20 @@ describe("rigs", () => {
     expect(set.every((a) => a.sounds.length > 0 && a.provenance.method === "rig")).toBe(true);
   });
 });
+
+describe("launch catalog", async () => {
+  const { launchCatalog } = await import("./launch");
+  it.each(["moodicons", "sonicglyphs"])("%s plan references only rig assets, valid packs and the brand's licenses", (brand) => {
+    const slugs = new Set(all.filter((x) => x.ad.brand === brand).map((x) => x.ad.slug));
+    const plan = launchCatalog(brand);
+    expect(new Set(plan.map((p) => p.slug)).size).toBe(plan.length);
+    for (const p of plan) {
+      expect(p.assetSlugs.every((s) => slugs.has(s))).toBe(true);
+      expect(p.assetSlugs.length).toBeGreaterThanOrEqual(p.kind === "pack" ? 2 : 1);
+      expect(p.assetSlugs.length).toBeLessThanOrEqual(100);
+    }
+    expect(plan.filter((p) => Object.values(p.prices).every((c) => c === 0))).toHaveLength(1);
+    // Every rig asset is for sale somewhere.
+    expect(new Set(plan.flatMap((p) => p.assetSlugs))).toEqual(slugs);
+  });
+});

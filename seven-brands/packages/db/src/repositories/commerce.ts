@@ -629,7 +629,7 @@ export async function listLicenses(db: Database, scope: BrandScope, filter: { br
     .limit(500);
 }
 
-/** Revenue in USD from live (non-test) orders, net of refunds. Other currencies are reported separately. */
+/** Revenue from live (non-test, non-free) orders, net of refunds. Other currencies are reported separately. */
 export async function revenueSummary(db: Database, scope: BrandScope, since: Date) {
   if (scope !== "all" && scope.length === 0) return [];
   return db
@@ -644,7 +644,7 @@ export async function revenueSummary(db: Database, scope: BrandScope, since: Dat
     })
     .from(order)
     .innerJoin(brand, eq(brand.id, order.brandId))
-    .where(and(eq(order.testMode, false), gte(order.paidAt, since), scope === "all" ? undefined : inArray(order.brandId, scope)))
+    .where(and(eq(order.testMode, false), sql`${order.provider} <> 'free'`, gte(order.paidAt, since), scope === "all" ? undefined : inArray(order.brandId, scope)))
     .groupBy(brand.slug, order.currency);
 }
 
@@ -668,4 +668,90 @@ export async function exportCustomerData(db: Database, customerId: string) {
 /** Opt-in only; the timestamp records when consent was given (or null after withdrawal). */
 export async function setMarketingConsent(db: DbOrTx, customerId: string, consent: boolean): Promise<void> {
   await db.update(customer).set({ marketingConsent: consent, marketingConsentAt: consent ? new Date() : null }).where(eq(customer.id, customerId));
+}
+
+// ─── Free products ───────────────────────────────────────────────────────────
+
+/**
+ * Claims a free product (an active $0 price for the license type). Creates a $0 order with provider "free",
+ * a license and an entitlement, exactly like a purchase, so the library, certificate and verification work the
+ * same. Claiming twice returns the existing entitlement.
+ */
+export async function claimFreeProduct(
+  db: Database,
+  input: { brandId: string; customerId: string; productSlug: string; licenseType: string },
+): Promise<{ status: "claimed" | "already_owned"; entitlement: Entitlement; license: License | null }> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ product, price })
+      .from(product)
+      .innerJoin(price, eq(price.productId, product.id))
+      .where(
+        and(
+          eq(product.brandId, input.brandId),
+          eq(product.slug, input.productSlug),
+          eq(product.status, "published"),
+          eq(price.licenseType, input.licenseType),
+          eq(price.active, true),
+          eq(price.amountCents, 0),
+        ),
+      );
+    if (!row) throw new NotFoundError("This product isn't free");
+    const [c] = await tx
+      .select({ customer, userName: user.name, userEmail: user.email })
+      .from(customer)
+      .innerJoin(user, eq(user.id, customer.userId))
+      .where(eq(customer.id, input.customerId))
+      .for("update");
+    if (!c || c.customer.brandId !== input.brandId) throw new ValidationError("Customer does not belong to this brand");
+    const [owned] = await tx
+      .select()
+      .from(entitlement)
+      .where(and(eq(entitlement.customerId, input.customerId), eq(entitlement.productId, row.product.id), isNull(entitlement.revokedAt)));
+    if (owned) {
+      const [lic] = owned.licenseId ? await tx.select().from(license).where(eq(license.id, owned.licenseId)) : [];
+      return { status: "already_owned", entitlement: owned, license: lic ?? null };
+    }
+    const [b] = await tx.select().from(brand).where(eq(brand.id, input.brandId));
+    const now = new Date();
+    const [o] = await tx
+      .insert(order)
+      .values({
+        id: newId("ord"),
+        brandId: input.brandId,
+        customerId: input.customerId,
+        provider: "free",
+        providerOrderId: newId("free"),
+        currency: row.price.currency,
+        subtotalCents: 0,
+        totalCents: 0,
+        email: c.userEmail,
+        testMode: false,
+        paidAt: now,
+      })
+      .returning();
+    const [item] = await tx
+      .insert(orderItem)
+      .values({ id: newId("oi"), orderId: o!.id, productId: row.product.id, priceId: row.price.id, licenseType: row.price.licenseType, titleSnapshot: row.product.title, amountCents: 0, currency: row.price.currency })
+      .returning();
+    const [lic] = await tx
+      .insert(license)
+      .values({
+        id: newId("lic"),
+        code: generateLicenseCode(b!.slug),
+        brandId: input.brandId,
+        customerId: input.customerId,
+        orderItemId: item!.id,
+        productId: row.product.id,
+        licenseType: row.price.licenseType,
+        termsVersion: LICENSE_TERMS_VERSION,
+        licenseeName: c.userName,
+      })
+      .returning();
+    const [ent] = await tx
+      .insert(entitlement)
+      .values({ id: newId("ent"), brandId: input.brandId, customerId: input.customerId, productId: row.product.id, licenseId: lic!.id, source: "free" })
+      .returning();
+    return { status: "claimed", entitlement: ent!, license: lic! };
+  });
 }

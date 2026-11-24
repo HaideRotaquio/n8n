@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
 import { money } from "@/lib/money";
 import { requirePageStaff } from "@/lib/server";
-import { collectionStatusAction, createCollectionAction } from "./actions";
+import { launchCatalog } from "@sb/rigs";
+import { collectionStatusAction, createCollectionAction, launchDraftsAction } from "./actions";
 
 export const metadata = { title: "Product catalog" };
 
@@ -45,6 +46,16 @@ export default async function CatalogPage() {
           </Table>
         )}
       </Card>
+      {writable.some((b) => launchCatalog(b.slug).length > 0) && (
+        <Card title="Launch catalog" className="mt-6">
+          <p className="mb-3 text-sm text-[var(--color-muted-text)]">Creates the planned launch products for a brand as drafts with suggested prices: singles (each design in all its color styles), bundles and one free starter pack. Existing products are left alone; nothing is published.</p>
+          <div className="flex flex-wrap gap-4">
+            {writable.filter((b) => launchCatalog(b.slug).length > 0).map((b) => (
+              <ActionForm key={b.id} action={launchDraftsAction.bind(null, b.id)} submit={`Create ${b.name} launch drafts (${launchCatalog(b.slug).length})`} variant="secondary" />
+            ))}
+          </div>
+        </Card>
+      )}
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card title="Collections">
           {collections.length === 0 ? (

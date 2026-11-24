@@ -312,3 +312,39 @@ describe("downloads, licenses and refunds", () => {
     expect(data!.licenses).toHaveLength(1);
   });
 });
+
+describe("launch tooling and free products", () => {
+  it("applies a catalog plan idempotently and reports missing assets", async () => {
+    const a = await makeAsset("plan-a");
+    const b = await makeAsset("plan-b");
+    const { applyCatalogPlan } = await import("./index");
+    const plan = [
+      { slug: "plan-pack", title: "Plan pack", description: "", kind: "pack" as const, assetSlugs: ["plan-a", "plan-b"], prices: { personal: 500, commercial: 1500 } },
+      { slug: "plan-missing", title: "Missing", description: "", kind: "single" as const, assetSlugs: ["nope"], prices: { personal: 100 } },
+    ];
+    const first = await applyCatalogPlan(h.db, staff, moodiconsId, plan);
+    expect(first).toEqual({ created: ["plan-pack"], existing: [], missingAssets: [{ slug: "plan-missing", assets: ["nope"] }] });
+    expect((await applyCatalogPlan(h.db, staff, moodiconsId, plan)).existing).toEqual(["plan-pack"]);
+    expect([a.asset.id, b.asset.id]).toHaveLength(2);
+  });
+
+  it("free products are claimed once, with a license, and never count as revenue", async () => {
+    const { claimFreeProduct, revenueSummary } = await import("./index");
+    const a = await makeAsset("free-a");
+    const p = await createProduct(h.db, staff, { brandId: moodiconsId, slug: "free-pack", title: "Free pack", kind: "single", assetIds: [a.asset.id] });
+    await upsertPrice(h.db, staff, { productId: p.id, licenseType: "personal", amountCents: 0 });
+    await upsertPrice(h.db, staff, { productId: p.id, licenseType: "commercial", amountCents: 900 });
+    const { publishProduct } = await import("./index");
+    await publishProduct(h.db, staff, p.id);
+    const c = await ensureCustomer(h.db, await makeUser("free@example.test"), moodiconsId);
+    const claim = await claimFreeProduct(h.db, { brandId: moodiconsId, customerId: c.id, productSlug: "free-pack", licenseType: "personal" });
+    expect(claim.status).toBe("claimed");
+    expect(claim.license!.licenseType).toBe("personal");
+    expect((await claimFreeProduct(h.db, { brandId: moodiconsId, customerId: c.id, productSlug: "free-pack", licenseType: "personal" })).status).toBe("already_owned");
+    await expect(claimFreeProduct(h.db, { brandId: moodiconsId, customerId: c.id, productSlug: "free-pack", licenseType: "commercial" })).rejects.toThrow(/isn't free/);
+    await expect(createCheckoutSession(h.db, { brandId: moodiconsId, customerId: c.id, productSlug: "free-pack", licenseType: "personal", provider: "test", testMode: true })).rejects.toThrow(/Free/);
+    expect((await authorizeDownload(h.db, { customerId: c.id, entitlementId: claim.entitlement.id, assetId: a.asset.id })).ok).toBe(true);
+    const rev = await revenueSummary(h.db, "all", new Date(0));
+    expect(rev.reduce((n, r) => n + r.orders, 0)).toBe(0);
+  });
+});

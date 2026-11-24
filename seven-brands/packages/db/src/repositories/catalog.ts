@@ -192,7 +192,7 @@ export async function checkPublishable(db: DbOrTx, productId: string): Promise<P
   const [p] = await db.select().from(product).where(eq(product.id, productId));
   if (!p) return { ok: false, problems: ["Product not found"] };
   const prices = await db.select().from(price).where(and(eq(price.productId, productId), eq(price.active, true)));
-  if (!prices.some((x) => x.amountCents > 0)) problems.push("Add at least one active price above zero");
+  if (prices.length === 0) problems.push("Add at least one active price (0 makes it a free download)");
   const rows = await db
     .select({ asset, deliverable: deliverableVersion(asset.id) })
     .from(productAsset)
@@ -400,4 +400,48 @@ export async function deliverablePackageFor(db: DbOrTx, assetId: string) {
     .innerJoin(exportArtifact, and(eq(exportArtifact.assetVersionId, assetVersion.id), eq(exportArtifact.format, "zip")))
     .where(eq(asset.id, assetId));
   return row ?? null;
+}
+
+export interface CatalogPlanItem {
+  slug: string;
+  title: string;
+  description: string;
+  kind: Product["kind"];
+  assetSlugs: string[];
+  prices: Record<string, number>;
+}
+
+export interface CatalogPlanResult {
+  created: string[];
+  existing: string[];
+  /** Products not created because some assets don't exist yet (run the rig jobs first). */
+  missingAssets: { slug: string; assets: string[] }[];
+}
+
+/**
+ * Creates draft products (with prices) from a plan. Idempotent: products whose slug exists are left alone.
+ * Nothing is published — a person reviews assets and publishes products.
+ */
+export async function applyCatalogPlan(db: Database, ctx: AuditContext, brandId: string, plan: CatalogPlanItem[]): Promise<CatalogPlanResult> {
+  const result: CatalogPlanResult = { created: [], existing: [], missingAssets: [] };
+  const assets = await db.select({ id: asset.id, slug: asset.slug, status: asset.status }).from(asset).where(eq(asset.brandId, brandId));
+  const bySlug = new Map(assets.filter((a) => a.status !== "archived" && a.status !== "rejected").map((a) => [a.slug, a.id]));
+  const existing = new Set((await db.select({ slug: product.slug }).from(product).where(eq(product.brandId, brandId))).map((p) => p.slug));
+  for (const item of plan) {
+    if (existing.has(item.slug)) {
+      result.existing.push(item.slug);
+      continue;
+    }
+    const missing = item.assetSlugs.filter((s) => !bySlug.has(s));
+    if (missing.length) {
+      result.missingAssets.push({ slug: item.slug, assets: missing });
+      continue;
+    }
+    const p = await createProduct(db, ctx, { brandId, slug: item.slug, title: item.title, description: item.description, kind: item.kind, assetIds: item.assetSlugs.map((s) => bySlug.get(s)!) });
+    for (const [licenseType, amountCents] of Object.entries(item.prices)) {
+      await upsertPrice(db, ctx, { productId: p.id, licenseType, amountCents });
+    }
+    result.created.push(item.slug);
+  }
+  return result;
 }
