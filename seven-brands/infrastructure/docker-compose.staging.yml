@@ -1,0 +1,42 @@
+# Staging on one small VPS (fallback path in docs/DEPLOYMENT.md). Database and file storage are managed services
+# (Neon Postgres + Cloudflare R2), so this host keeps no customer data. All settings come from .env.staging.
+#   docker compose -f infrastructure/docker-compose.staging.yml --env-file .env.staging run --rm migrate
+#   docker compose -f infrastructure/docker-compose.staging.yml --env-file .env.staging up -d
+name: seven-brands-staging
+
+x-env: &env
+  env_file: ../.env.staging
+  restart: unless-stopped
+
+services:
+  migrate:
+    build: { context: .., dockerfile: infrastructure/Dockerfile, target: worker }
+    env_file: ../.env.staging
+    command: ["sh", "-c", "cd /repo/packages/db && node --import tsx src/cli/migrate.ts && node --import tsx src/cli/seed.ts"]
+    profiles: ["tasks"]
+
+  admin:
+    <<: *env
+    build: { context: .., dockerfile: infrastructure/Dockerfile, target: admin }
+    expose: ["3100"]
+
+  storefront:
+    <<: *env
+    build: { context: .., dockerfile: infrastructure/Dockerfile, target: storefront }
+    expose: ["3200"]
+
+  worker:
+    <<: *env
+    build: { context: .., dockerfile: infrastructure/Dockerfile, target: worker }
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [admin, storefront]
+
+volumes:
+  caddy_data:

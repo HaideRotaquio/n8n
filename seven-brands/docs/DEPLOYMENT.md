@@ -19,6 +19,22 @@ See `.env.example`. Required in production: `DATABASE_URL`, `BETTER_AUTH_SECRET`
 
 The storefront is one deployment for every brand: point each brand domain at it and list the domain in the brand's settings (admin → Brands). Webhook URL for the providers: `https://<any brand domain>/api/webhooks/<provider>`.
 
+## Staging (ready, not yet deployed)
+
+Prepared in Phase 4; it needs owner accounts and approval before anything is created. The quickest path is one small VPS running containers, with managed database and storage so the server keeps no customer data:
+
+1. Create: a Neon Postgres database, a private Cloudflare R2 bucket with an access key, a VPS (2 GB RAM is enough; Docker installed), and DNS records for `admin.<staging domain>` and one host per brand.
+2. Copy `.env.staging.example` to `.env.staging` on the server and fill it in. Payments stay in test mode (see `PAYMENTS_SETUP.md`).
+3. Copy `infrastructure/Caddyfile.example` to `infrastructure/Caddyfile` and put in the real domains. Add the same brand domains in admin → Brands.
+4. `docker compose -f infrastructure/docker-compose.staging.yml --env-file .env.staging run --rm migrate` (migrations + seed), then `... up -d`.
+5. Create the owner: `docker compose ... run --rm worker sh -c "cd /repo/packages/auth && OWNER_EMAIL=… OWNER_NAME=… OWNER_PASSWORD=… node --import tsx src/cli/create-owner.ts"`.
+6. In the admin: run the rig jobs (all palettes), review and export assets, "Create launch drafts", check prices, publish.
+7. Point the payment provider's webhook at `https://<a brand domain>/api/webhooks/<provider>` and make a test purchase.
+
+What has been verified here: both apps build as Next.js standalone servers, and the standalone storefront serves health, brand-by-host pages, CSS and 404s for unknown hosts. The Docker images themselves have **not** been built in this environment (no Docker daemon) — the first build on the server is the remaining check.
+
+Cloudflare Workers (OpenNext) remains the cheaper target from D4 but needs a Postgres driver that works over Workers' sockets; the container route avoids that risk for staging.
+
 ## Release steps
 
 1. CI green (typecheck, unit/integration, E2E).

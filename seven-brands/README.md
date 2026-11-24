@@ -12,13 +12,13 @@ One parent company, seven independent brands of interactive digital assets, one 
 | LearnIcons | Educational interactive icons | Planned (Phase 6) |
 | AliveUI | Interactive UI components | Planned (Phase 7) |
 
-**Current state: Phase 3 (Commerce) complete, in test mode.** Products can be published and bought end to end with a labelled test provider; Lemon Squeezy and Paddle adapters are built but no real sandbox purchase has been made yet (no accounts). See [CHANGELOG.md](CHANGELOG.md) for what exists and [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md) for what comes next. Nothing is deployed or selling yet.
+**Current state: Phase 4 complete except the staging deploy itself.** Moodicons and SonicGlyphs have their own storefront designs and a launch catalog (76 + 42 assets, made by rigs at $0 AI cost). Everything runs in test mode with a labelled test payment provider. Not done yet: a real Lemon Squeezy/Paddle sandbox purchase (no accounts) and a deploy (needs your hosting accounts; the container setup is ready). See [CHANGELOG.md](CHANGELOG.md) for what exists and [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md) for what comes next. Nothing is deployed or selling yet.
 
 ## What's here
 
 ```
 apps/admin/        DAOS admin (Next.js 16) — brands, assets, production, agents, QA, catalog, orders + refunds, customers, licenses, revenue, expenses, team, audit
-apps/storefront/   One storefront for every brand (brand from host) — catalog, accounts, checkout, library, licensed downloads, license verification, payment webhooks
+apps/storefront/   One storefront for every brand (brand from host), with a design per brand — search, live preview, accounts, checkout, free packs, library, licensed downloads, license verification, help, webhooks
 services/worker/   Background worker: rig, AI and export jobs (needs ffmpeg)
 brands/            Code-level identity + config for all seven brands
 packages/core/     Domain logic: brand config schema, RBAC, ids, errors (no I/O)
@@ -30,11 +30,11 @@ packages/asset/    Asset Definition schema, motion engine, renderer, QA
 packages/audio/    Procedural sounds, loudness, mixing, WAV
 packages/svg-engine/  Safe importer for untrusted SVG
 packages/player/   Browser player + <daos-asset> Web Component
-packages/export/   SVG/PNG/GIF/MP4/WebM/WAV/React/Web Component/ZIP exports
-packages/rigs/     Parametric generators (Moodicons faces, SonicGlyphs glyphs)
+packages/export/   SVG/PNG/GIF/MP4/WebM/WAV/Lottie/React/Web Component/ZIP exports
+packages/rigs/     Parametric generators (Moodicons faces + stickers, SonicGlyphs glyphs) and the launch catalog plan
 packages/agents/   AI providers (Anthropic, fixtures) and the production pipeline
 packages/commerce/ Payment providers (Lemon Squeezy, Paddle, test), webhooks, license certificates
-infrastructure/    docker-compose for local Postgres + MinIO
+infrastructure/    docker-compose for local Postgres + MinIO; production Dockerfile, staging compose + Caddy
 docs/              Architecture, schema, security, costs, payments setup, roadmap… (15 documents)
 ```
 
@@ -53,6 +53,7 @@ OWNER_EMAIL=you@example.com OWNER_NAME="You" OWNER_PASSWORD='a-long-passphrase' 
 pnpm --filter @sb/admin dev          # http://localhost:3100
 pnpm --filter @sb/worker start       # second terminal: runs production jobs (needs ffmpeg)
 pnpm --filter @sb/storefront dev     # third terminal: http://moodicons.localhost:3200 (each brand at <slug>.localhost)
+pnpm --filter @sb/worker demo:catalog  # optional, dev DB only: fills both stores with the launch catalog
 ```
 
 ## Tests

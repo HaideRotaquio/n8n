@@ -16,7 +16,7 @@ Source of truth: `brands/src/index.ts` (validated and contrast-tested in CI). Co
 
 1. **Distinct, not reskinned.** Each brand gets its own layout family (page composition, navigation pattern, product-card design), not just a color swap. CI asserts unique primaries and layouts.
 2. **Accessible by default.** Body text, muted text and text-on-primary must meet WCAG AA (4.5:1). CI fails otherwise.
-3. **Open-licensed fonts only** (SIL OFL via Google Fonts or self-hosted).
+3. **Open-licensed fonts only** (SIL OFL), self-hosted from Fontsource packages so visitors' browsers never contact Google.
 4. **Motion personality** sets default easing and spring parameters in previews and storefront micro-interactions; it always yields to `prefers-reduced-motion`.
 5. **Sound is opt-in** in every brand: muted until the visitor turns it on.
 6. **LearnIcons is child-safe:** marketed to parents/teachers; no child accounts; no tracking on previews.

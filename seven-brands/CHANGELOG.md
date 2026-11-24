@@ -2,6 +2,29 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.4.0] — 2026-11-24 — Phase 4: Moodicons + SonicGlyphs
+
+### Added
+- Storefront designs per layout family: Moodicons **playful-grid** and SonicGlyphs **studio-dark** (different page compositions, navigation, cards and product pages — not a color swap). Search, category filters, live preview with every included color style, color customizer, opt-in sound and a cue sheet (SonicGlyphs), help pages (FAQ, licenses, refunds). Self-hosted OFL fonts (Baloo 2, Nunito, Space Grotesk, Inter).
+- Free products: "Get it free" without checkout; a $0 order (`free` provider) with a real license; excluded from revenue.
+- Launch content: Moodicons face rig 15 expressions (60 with palettes), new reaction-sticker rig (16), SonicGlyphs 14 glyphs (42). All 100/100 QA.
+- Launch catalog plan (singles with all color styles, bundles, one free starter pack per brand) and an admin button that creates it as drafts with starting prices. `pnpm --filter @sb/worker demo:catalog` fills a dev database (refuses anything else).
+- Lottie export (`lottie/<slug>.json` in packages and as a separate file), verified against lottie-web for every rig asset.
+- Sound library: WAV upload with license record and loudness normalization, sound replacement on assets (new version → review), stored sounds in exports, admin viewer and storefront previews.
+- Catalog writer agent (`catalog` jobs): suggestions for title, description, tags and alt text, applied by a person; fixture mode for tests.
+- Staging prep: Next.js standalone output, `infrastructure/Dockerfile` (admin, storefront, worker), `docker-compose.staging.yml` with Caddy, `.env.staging.example`, DEPLOYMENT.md → Staging.
+- Tests: 378 unit/integration/browser (+3 S3) and 28 E2E (21 admin, 7 storefront).
+
+### Changed
+- Export jobs only render the preview formats asked for (the package is always built).
+- Admin forms keep what was typed (and chosen files) after a validation error.
+- Admin "Store management" and "Analytics" sections moved to Phase 5.
+
+### Not yet done
+- Staging deploy (needs owner accounts); Docker images not built here (no Docker daemon).
+- Real Lemon Squeezy / Paddle sandbox purchase; live AI run (Anthropic credits).
+- Cart, analytics, store management (Phase 5); brand logos.
+
 ## [0.3.0] — 2026-11-24 — Phase 3: Commerce
 
 ### Added

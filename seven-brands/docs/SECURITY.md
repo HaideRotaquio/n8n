@@ -47,6 +47,17 @@
 | License verification | Public endpoint returns initials only; 80-bit random codes make guessing impractical | db commerce.test, storefront e2e |
 | Privacy | Marketing consent is opt-in with a timestamp; customers download all their data from their account | db commerce.test, storefront e2e |
 
+## Implemented (Phase 4)
+
+| Control | Implementation | Test |
+|---|---|---|
+| Sound rights | Every stored sound needs a source/license reference (DB check) and the uploader's confirmation, both audited; exports refuse assets whose stored sound is missing | worker.test, admin e2e |
+| Upload limits | WAV only (16-bit PCM), ≤ 10 MB, ≤ 10 s, re-encoded by our code before storage (never served as uploaded) | audio.test |
+| Free claims | Only published products with an active $0 price; one claim per customer; same license and download checks as purchases | db commerce.test, storefront e2e |
+| AI copy | Catalog suggestions never change a product until a person applies them; spend caps apply | worker.test, admin e2e |
+| Demo data | `demo:catalog` (auto-approves) refuses to run unless the database name ends in `_dev` or `test`, and when `DEPLOY_ENV=production` | code |
+| Secrets in deploy files | `.env.*` git-ignored except the examples; images contain no secrets | config |
+
 ## Planned
 
 - **SVG upload UI:** file type sniffing and size limits in front of the importer.

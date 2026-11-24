@@ -16,6 +16,9 @@ const securityHeaders = [
 
 const config: NextConfig = {
   poweredByHeader: false,
+  // Self-contained server for containers (see infrastructure/Dockerfile); traced from the monorepo root.
+  output: "standalone",
+  outputFileTracingRoot: path.resolve(process.cwd(), "../.."),
   transpilePackages: ["@sb/core", "@sb/db", "@sb/auth", "@sb/brands", "@sb/storage", "@sb/ui", "@sb/asset", "@sb/audio", "@sb/player", "@sb/rigs", "@sb/agents", "@sb/commerce"],
   serverExternalPackages: ["pg", "@anthropic-ai/sdk"],
   experimental: { authInterrupts: true },

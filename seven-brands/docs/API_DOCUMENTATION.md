@@ -83,6 +83,9 @@ Form fields `entitlementId`, `assetId`. Checks the entitlement is the caller's a
 ### `GET /account/data` (*storefront*, signed-in customer)
 Everything held about the customer for that brand (account, orders, licenses, downloads) as a JSON attachment — the data-access request required by GDPR and the Philippine Data Privacy Act.
 
+### `GET /api/sounds/:id` (*storefront*)
+Preview audio (WAV) for a library sound that is shared or belongs to this brand; 404 otherwise. Public like the animated previews.
+
 ### `GET /api/storage/download` (*storefront*)
 Same signed-URL route as the admin's, for the `fs` driver.
 

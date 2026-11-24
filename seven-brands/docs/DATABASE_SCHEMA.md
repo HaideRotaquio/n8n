@@ -52,7 +52,15 @@ Conventions: text primary keys with type prefixes (`brd_…`, `usr_…`, ULID-ba
 
 Not built from the Phase 0 design: `payment` (one payment per order, so totals live on `order`), `subscription` (no subscriptions sold yet), `revenue_record` (revenue is computed from `order`).
 
-## Planned (Phase 4+)
+## Implemented (Phase 4)
+
+| Change | Purpose |
+|---|---|
+| `sound_asset` | Stored sounds (`snd_…`): brand or shared, source (recorded/library/synthesized/ai), author, **license reference (required)**, who confirmed the rights, storage key, duration, loudness, retirement |
+| `payment_provider` + `free` | Free products create a $0 order with provider `free`, so licenses and history work like purchases; excluded from revenue |
+| `job_kind` + `catalog` | Catalog-writer jobs; the suggestion lives in the job result until a person applies it |
+
+## Planned (Phase 5+)
 
 Designed in `PHASE_0_REPORT.md` §8; added by migration as each phase begins:
 

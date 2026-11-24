@@ -1,0 +1,15 @@
+# Copy to infrastructure/Caddyfile and replace the domains. Caddy gets HTTPS certificates automatically.
+# Every brand domain points at the one storefront; the brand is chosen from the Host header, and the same
+# domains must be listed in admin → Brands (brand_domain), or the storefront answers 404.
+
+admin.staging.example.com {
+	reverse_proxy admin:3100
+	header -Server
+}
+
+moodicons.staging.example.com, sonicglyphs.staging.example.com {
+	reverse_proxy storefront:3200 {
+		header_up X-Forwarded-Proto https
+	}
+	header -Server
+}

@@ -21,6 +21,7 @@ The key goes in the cloud environment's variables (or the host's secret store in
 | `creative_director` | Concept: name, slug, category, tags, artwork, animatable parts, motion, sound, label | medium |
 | `svg_artist` | Complete SVG; importer validates and can send errors back once | high |
 | `animator` | Duration, tracks (with pivots), markers, sound cues, still frame; QA can send errors back once | medium |
+| `catalog_writer` (Phase 4) | Product title, description, tags, alt text from the product's facts; told not to invent features or mention AI/prices. Runs as a `catalog` job; the admin shows it and a person clicks Apply | low |
 
 Code (`packages/agents/src/pipeline.ts`) orchestrates; models only fill typed slots. Every output is re-validated by the Asset Definition schema and QA.
 
@@ -36,4 +37,4 @@ Agents never touch the database, storage, secrets, payments or customers. The wo
 
 ## Next
 
-Eval set per agent before production use; batch API (−50%) for collections; catalog/metadata agent (Phase 3).
+Eval set per agent before production use; batch API (−50%) for collections. The live API test is still waiting for account credits.
