@@ -22,7 +22,7 @@ const LICENSE_HINT: Record<LicenseType, string> = {
   enterprise: "Unlimited people in one organization",
 };
 
-const FORMATS = "SVG, animated SVG, PNG, GIF, MP4, WebM, WAV, React, Web Component";
+const FORMATS = "SVG, animated SVG, PNG, GIF, MP4, WebM, Lottie, WAV, React, Web Component";
 
 export default async function ProductPage({ params }: Props) {
   const store = await requireStore();

@@ -10,7 +10,7 @@ export default async function HelpPage() {
   const { Page } = designFor(brand);
   const name = brand.config.name;
   const faq: [string, React.ReactNode][] = [
-    ["What do I get when I buy?", <>A ZIP for each icon with static and animated SVG, PNG, GIF, MP4 and WebM video, the sound as WAV with a cue sheet, a React component, a Web Component and the source definition (JSON). Plus a LICENSE.txt with your name and license code.</>],
+    ["What do I get when I buy?", <>A ZIP for each icon with static and animated SVG, PNG, GIF, Lottie (JSON), MP4 and WebM video, the sound as WAV with a cue sheet, a React component, a Web Component and the source definition (JSON). Plus a LICENSE.txt with your name and license code.</>],
     ["Does the sound play automatically?", <>No. Sound is always off until someone turns it on, on our site and in the components you download. Browsers require a click or tap before any sound plays.</>],
     ["Can I change the colors?", <>Yes. Every icon uses named color tokens. Try it on any product page under “Try your own colors”; the React and Web Components accept the same tokens.</>],
     ["Which license do I need?", <>Personal for your own non-commercial projects, Commercial for your business, Team for up to 10 people, Agency for client work. <Link href="/help/licenses" className="underline">Compare licenses</Link>.</>],

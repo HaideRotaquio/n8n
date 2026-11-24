@@ -14,6 +14,7 @@ import { DEFAULT_SAMPLE_RATE, encodeWav, mix, normalize, parseSynthRef, renderPr
 import { Resvg } from "@resvg/resvg-js";
 import { build } from "esbuild";
 import { strToU8, zipSync } from "fflate";
+import { exportLottie } from "./lottie";
 
 /**
  * Export engine: compiles an Asset Definition into customer-facing files.
@@ -310,7 +311,7 @@ export interface PackageResult {
   files: { path: string; bytes: number }[];
 }
 
-export const ALL_FORMATS: ExportFormat[] = ["svg", "svg-animated", "png", "gif", "mp4", "webm", "wav", "web-component", "react", "json"];
+export const ALL_FORMATS: ExportFormat[] = ["svg", "svg-animated", "png", "gif", "mp4", "webm", "wav", "lottie", "web-component", "react", "json"];
 
 export async function buildPackage(ad: AssetDefinition, opts: PackageOptions): Promise<PackageResult> {
   const formats = new Set(opts.formats ?? ALL_FORMATS);
@@ -346,6 +347,7 @@ export async function buildPackage(ad: AssetDefinition, opts: PackageOptions): P
       add("react/daos-player.js", bundle);
     }
   }
+  if (formats.has("lottie")) add(`lottie/${slug}.json`, JSON.stringify(exportLottie(ad, { tokens: opts.tokens })));
   if (formats.has("json")) add(`json/${slug}.json`, JSON.stringify(ad, null, 2));
 
   add("README.txt", readme(ad, opts.brandName, [...formats]));
@@ -382,3 +384,4 @@ visitor's system asks for reduced motion.
 Colors: ${Object.entries(ad.tokens).map(([k, v]) => `${k} ${v}`).join(", ")}
 `;
 }
+export * from "./lottie";

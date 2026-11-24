@@ -23,6 +23,7 @@ import {
   buildPackage,
   exportAnimatedSvg,
   exportGif,
+  exportLottie,
   exportMp4,
   exportStaticSvg,
   renderPng,
@@ -157,6 +158,7 @@ async function runExportJob(job: ProductionJob, deps: JobDeps) {
   if (want("svg-animated")) files.push({ format: "svg-animated", name: `${ad.slug}-animated.svg`, data: enc(exportAnimatedSvg(ad)), contentType: "image/svg+xml" });
   if (want("png")) files.push({ format: "png", name: `${ad.slug}-512.png`, data: renderPng(ad, ad.a11y.reducedMotionFrame, { size: 512 }), contentType: "image/png" });
   if (want("gif")) files.push({ format: "gif", name: `${ad.slug}.gif`, data: await exportGif(ad), contentType: "image/gif" });
+  if (want("lottie")) files.push({ format: "lottie", name: `${ad.slug}.lottie.json`, data: enc(JSON.stringify(exportLottie(ad))), contentType: "application/json" });
   if (want("mp4")) files.push({ format: "mp4", name: `${ad.slug}.mp4`, data: await exportMp4(ad, { size: 512 }), contentType: "video/mp4" });
   const pkg = await buildPackage(ad, { brandName: detail.brand.name, formats: brief.data.formats });
   files.push({ format: "zip", name: `${ad.slug}-v${detail.current.version}.zip`, data: pkg.zip, contentType: "application/zip" });

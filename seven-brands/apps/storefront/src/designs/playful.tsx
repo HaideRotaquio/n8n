@@ -90,7 +90,7 @@ function Home({ tagline, description, items, categories, q, category, freePack, 
               <a href="#shop" className="rounded-full bg-[var(--color-primary)] px-6 py-3 font-extrabold text-[var(--color-primary-text)] shadow">Browse the icons</a>
               {freePack && <Link href={`/products/${freePack.slug}`} className="rounded-full bg-[var(--color-accent)] px-6 py-3 font-extrabold">Get the free pack</Link>}
             </div>
-            <p className="mt-4 text-sm text-[var(--color-muted-text)]">Animated SVG, GIF, MP4, WebM, React and Web Components — with sound.</p>
+            <p className="mt-4 text-sm text-[var(--color-muted-text)]">Animated SVG, Lottie, GIF, MP4, WebM, React and Web Components — with sound.</p>
           </div>
           <ul className="grid grid-cols-3 gap-3" aria-label="Featured icons">
             {showcase.slice(0, 6).map((it, i) => (

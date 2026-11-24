@@ -101,7 +101,7 @@ describe("export jobs", () => {
     const done = (await getJob(h.db, job.id))!.job;
     expect(done.status, done.error ?? "").toBe("succeeded");
     const detail = (await getAssetDetail(h.db, item!.asset.id))!;
-    expect(detail.exports.map((e) => e.format).sort()).toEqual(["gif", "mp4", "png", "svg", "svg-animated", "zip"]);
+    expect(detail.exports.map((e) => e.format).sort()).toEqual(["gif", "lottie", "mp4", "png", "svg", "svg-animated", "zip"]);
     const zipArt = detail.exports.find((e) => e.format === "zip")!;
     const zip = unzipSync((await storage.get(zipArt.storageKey))!);
     expect(Object.keys(zip)).toContain("README.txt");
