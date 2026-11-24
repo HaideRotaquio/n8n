@@ -1,5 +1,5 @@
 import { AnthropicProvider, FixtureProvider, type ModelProvider } from "./providers";
-import { FIXTURE_OUTPUTS } from "./fixtures";
+import { freshFixtureOutputs } from "./fixtures";
 
 export * from "./providers";
 export * from "./agents";
@@ -18,7 +18,7 @@ export type ProviderStatus =
  */
 export function providerFromEnv(env: NodeJS.ProcessEnv = process.env): ProviderStatus {
   if (env.DAOS_AI_PROVIDER === "fixture") {
-    return { configured: true, provider: new FixtureProvider(structuredClone(FIXTURE_OUTPUTS)), label: "Fixture outputs (not AI)" };
+    return { configured: true, provider: new FixtureProvider(freshFixtureOutputs()), label: "Fixture outputs (not AI)" };
   }
   if (env.DAOS_ANTHROPIC_API_KEY) {
     const model = env.DAOS_ANTHROPIC_MODEL || "claude-opus-5-5";

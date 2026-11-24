@@ -59,8 +59,32 @@ export const FIXTURE_PLAN: MotionPlan = {
   stillFrameMs: 140,
 };
 
+/** Deterministic catalog copy built from the facts in the prompt (fixture mode: clearly not AI writing). */
+export function fixtureCatalogCopy(prompt: string) {
+  const title = /Current title: (.+)/.exec(prompt)?.[1]?.trim() ?? "Animated Icon";
+  const first = /\n- ([^:]+): ([^;]+);/.exec(prompt);
+  const tags = /tags ([^;]+);/.exec(prompt)?.[1]?.split(",").map((t) => t.trim()).filter(Boolean) ?? [];
+  return {
+    title,
+    description: `${first?.[2] ?? title}. [Fixture copy, not AI] Includes every format listed for the product.`,
+    tags: [...new Set([...tags, "animated", "icon"])].slice(0, 8),
+    altText: first?.[2] ?? title,
+  };
+}
+
 export const FIXTURE_OUTPUTS = {
   creative_director: [FIXTURE_CONCEPT],
   svg_artist: [FIXTURE_SVG],
   animator: [FIXTURE_PLAN],
+  catalog_writer: fixtureCatalogCopy,
 };
+
+/** A fresh, mutable copy of the fixture outputs (FixtureProvider consumes array entries). */
+export function freshFixtureOutputs() {
+  return {
+    creative_director: [structuredClone(FIXTURE_CONCEPT)],
+    svg_artist: [structuredClone(FIXTURE_SVG)],
+    animator: [structuredClone(FIXTURE_PLAN)],
+    catalog_writer: fixtureCatalogCopy,
+  };
+}

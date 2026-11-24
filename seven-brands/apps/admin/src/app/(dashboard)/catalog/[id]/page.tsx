@@ -1,5 +1,5 @@
 import { can, LICENSE_TYPE_LABELS, type LicenseType } from "@sb/core";
-import { checkPublishable, getDb, getProductDetail } from "@sb/db";
+import { checkPublishable, getDb, getProductDetail, latestCatalogJob } from "@sb/db";
 import { Badge, Card, Field, Input, Notice, PageHeader, Table, Textarea } from "@sb/ui";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,7 +7,7 @@ import { ActionForm } from "@/components/action-form";
 import { money } from "@/lib/money";
 import { requirePageStaff } from "@/lib/server";
 import { AssetStatusBadge, AssetThumb, previewBg } from "../../assets/asset-bits";
-import { archiveAction, publishAction, setPriceAction, updateProductAction } from "../actions";
+import { applyCopyAction, archiveAction, publishAction, setPriceAction, suggestCopyAction, updateProductAction } from "../actions";
 
 export const metadata = { title: "Product" };
 
@@ -22,6 +22,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const canPrice = can(staff.grants, "pricing.write", d.product.brandId);
   const canPublish = can(staff.grants, "asset.publish", d.product.brandId);
   const domain = d.brand.config.domains[0];
+  const copyJob = canWrite ? await latestCatalogJob(db, id) : null;
+  const suggestion = copyJob?.status === "succeeded" ? (copyJob.result as { suggestion?: { title: string; description: string; tags: string[]; altText: string }; provider?: string }) : null;
   return (
     <>
       <PageHeader
@@ -74,6 +76,23 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               </ActionForm>
             )}
           </Card>
+          {canWrite && (
+            <Card title="Store copy suggestion" actions={can(staff.grants, "production.run", d.product.brandId) ? <ActionForm action={suggestCopyAction.bind(null, id)} submit="Suggest copy" variant="secondary" /> : undefined}>
+              {!copyJob ? (
+                <p className="text-sm text-[var(--color-muted-text)]">The catalog writer drafts a title, description, tags and alt text from the assets. Nothing changes until you apply it.</p>
+              ) : copyJob.status !== "succeeded" ? (
+                <p className="text-sm">Latest request: {copyJob.status}{copyJob.error ? ` — ${copyJob.error}` : ""}</p>
+              ) : suggestion?.suggestion ? (
+                <div className="space-y-2 text-sm">
+                  <p className="text-xs text-[var(--color-muted-text)]">From {suggestion.provider}</p>
+                  <p className="font-semibold">{suggestion.suggestion.title}</p>
+                  <p>{suggestion.suggestion.description}</p>
+                  <p className="text-xs">Tags: {suggestion.suggestion.tags.join(", ")} · Alt text: {suggestion.suggestion.altText}</p>
+                  <ActionForm action={applyCopyAction.bind(null, id, copyJob.id)} submit="Apply title and description" />
+                </div>
+              ) : null}
+            </Card>
+          )}
           {canWrite && (
             <Card title="Details">
               <ActionForm action={updateProductAction.bind(null, id)} submit="Save">

@@ -3,7 +3,10 @@ import type { BrandConfig } from "@sb/core";
 import { importSvg } from "@sb/svg-engine";
 import {
   animatorPrompt,
+  CatalogCopySchema,
+  catalogWriterPrompt,
   ConceptSchema,
+  type CatalogCopy,
   creativeDirectorPrompt,
   MotionPlanSchema,
   svgArtistPrompt,
@@ -209,4 +212,31 @@ export async function runAiProduction(brand: BrandConfig, brief: AiBrief, deps: 
   if (!definition || !qa) throw new ProviderError(`Motion plan failed QA: ${qa?.errors.map((e) => e.message).join("; ")}`, false);
 
   return { definition, qa, concept, importWarnings: imported.warnings.map((w) => w.message) };
+}
+
+
+export interface CatalogFacts {
+  kind: "single" | "pack";
+  currentTitle: string;
+  assets: { name: string; label: string; category: string | null; tags: string[]; durationMs: number; sounds: number }[];
+  formats: string;
+}
+
+/** One catalog-writer call. The result is only a suggestion: a person applies it in the admin. */
+export async function runCatalogCopy(brand: BrandConfig, facts: CatalogFacts, deps: PipelineDeps): Promise<CatalogCopy> {
+  const lines = facts.assets.slice(0, 30).map((a) => `- ${a.name}: ${a.label}; category ${a.category ?? "none"}; tags ${a.tags.join(", ")}; ${(a.durationMs / 1000).toFixed(1)} s loop; ${a.sounds} sound cue(s)`);
+  const copy = await call(deps, {
+    agent: "catalog_writer",
+    system: catalogWriterPrompt(brand),
+    prompt: `Product type: ${facts.kind} (${facts.assets.length} icons)\nCurrent title: ${facts.currentTitle}\nFormats: ${facts.formats}\nAssets:\n${lines.join("\n")}${facts.assets.length > 30 ? `\n…and ${facts.assets.length - 30} more` : ""}`,
+    schema: CatalogCopySchema,
+    effort: "low",
+    maxTokens: 2000,
+  });
+  return {
+    title: copy.title.trim().slice(0, 120),
+    description: copy.description.trim().slice(0, 600),
+    tags: [...new Set(copy.tags.map((t) => t.trim().toLowerCase()).filter(Boolean))].slice(0, 12),
+    altText: copy.altText.trim().slice(0, 200),
+  };
 }

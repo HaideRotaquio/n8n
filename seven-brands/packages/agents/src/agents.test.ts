@@ -8,7 +8,7 @@ import {
   ConceptSchema,
   costFor,
   FIXTURE_CONCEPT,
-  FIXTURE_OUTPUTS,
+  freshFixtureOutputs,
   FIXTURE_PLAN,
   FIXTURE_SVG,
   FixtureProvider,
@@ -39,7 +39,7 @@ function deps(provider: FixtureProvider, budgetLeft = Infinity) {
 
 describe("AI production pipeline (fixture provider)", () => {
   it("produces a valid, QA-clean asset marked as fixture provenance", async () => {
-    const { deps: d, calls } = deps(new FixtureProvider(structuredClone(FIXTURE_OUTPUTS)));
+    const { deps: d, calls } = deps(new FixtureProvider(freshFixtureOutputs()));
     const r = await runAiProduction(mood, { prompt: "a celebratory star" }, d);
     expect(r.definition.slug).toBe("sparkle-star");
     expect(r.definition.provenance.method).toBe("fixture");
@@ -52,7 +52,7 @@ describe("AI production pipeline (fixture provider)", () => {
 
   it("repairs an SVG the importer rejected", async () => {
     const evil = { svg: '<svg viewBox="0 0 64 64"><script>alert(1)</script></svg>', notes: "x" };
-    const p = new FixtureProvider({ ...structuredClone(FIXTURE_OUTPUTS), svg_artist: [evil, FIXTURE_SVG] });
+    const p = new FixtureProvider({ ...freshFixtureOutputs(), svg_artist: [evil, FIXTURE_SVG] });
     const { deps: d } = deps(p);
     const r = await runAiProduction(mood, { prompt: "star" }, d);
     expect(r.qa.passed).toBe(true);
@@ -64,14 +64,14 @@ describe("AI production pipeline (fixture provider)", () => {
     const bad = structuredClone(FIXTURE_PLAN);
     bad.tracks[2]!.keyframes[1]!.value = 1.5; // opacity above 1 → QA error
     bad.tracks.push({ target: "does-not-exist", property: "rotate", origin: [0, 0], keyframes: [{ at: 0, value: 0, ease: "linear" }] });
-    const p = new FixtureProvider({ ...structuredClone(FIXTURE_OUTPUTS), animator: [bad, FIXTURE_PLAN] });
+    const p = new FixtureProvider({ ...freshFixtureOutputs(), animator: [bad, FIXTURE_PLAN] });
     const r = await runAiProduction(mood, { prompt: "star" }, deps(p).deps);
     expect(r.qa.errors).toEqual([]);
     expect(p.calls.filter((c) => c.agent === "animator")).toHaveLength(2);
   });
 
   it("stops when the budget is exhausted", async () => {
-    const { deps: d, calls } = deps(new FixtureProvider(structuredClone(FIXTURE_OUTPUTS)), 1);
+    const { deps: d, calls } = deps(new FixtureProvider(freshFixtureOutputs()), 1);
     await expect(runAiProduction(mood, { prompt: "star" }, d)).rejects.toBeInstanceOf(BudgetExceededError);
     expect(calls).toHaveLength(1);
   });
@@ -166,5 +166,28 @@ describe("Anthropic adapter contract (local fake API)", () => {
   it("does not pick up the tooling's ANTHROPIC_BASE_URL", () => {
     const p = new AnthropicProvider({ apiKey: "k" }) as any;
     expect(p.client.baseURL).toBe("https://api.anthropic.com");
+  });
+});
+
+describe("catalog writer", async () => {
+  const { runCatalogCopy, FixtureProvider, freshFixtureOutputs, catalogWriterPrompt } = await import("./index");
+  const { BRAND_DEFINITIONS } = await import("@sb/brands");
+  const brand = BRAND_DEFINITIONS.moodicons.config;
+  it("produces cleaned, bounded copy and records the call", async () => {
+    const calls: string[] = [];
+    const copy = await runCatalogCopy(
+      brand,
+      { kind: "pack", currentTitle: "Happy Face", formats: "SVG, Lottie", assets: [{ name: "Happy Face", label: "Smiling face bouncing happily", category: "happiness", tags: ["happy", "smile"], durationMs: 1000, sounds: 1 }] },
+      { provider: new FixtureProvider(freshFixtureOutputs()), onAgentCall: async (r) => void calls.push(r.agent), checkBudget: async () => {} },
+    );
+    expect(copy.title).toBe("Happy Face");
+    expect(copy.description).toContain("Fixture copy, not AI");
+    expect(copy.tags).toContain("happy");
+    expect(calls).toEqual(["catalog_writer"]);
+  });
+  it("tells the model not to invent features or mention AI and prices", () => {
+    const p = catalogWriterPrompt(brand);
+    expect(p).toMatch(/Never invent/);
+    expect(p).toMatch(/Never mention AI, prices/);
   });
 });

@@ -59,7 +59,7 @@ export async function createProductAction(_prev: ActionState, form: FormData): P
 
 async function productStaff(productId: string, permission: Parameters<typeof can>[1]) {
   const detail = await getProductDetail(getDb(), productId);
-  if (!detail) return { detail: null, staff: null };
+  if (!detail) return { detail: null, staff: null } as const;
   return { detail, staff: await staffFor(permission, detail.product.brandId) };
 }
 
@@ -162,4 +162,34 @@ export async function launchDraftsAction(brandId: string, _prev: ActionState): P
     return { ok: r.created.length > 0, message: `${parts.join(", ")}. ${r.missingAssets.length} skipped: their assets don't exist yet. Run the brand's rig jobs (all palettes) in Production, then try again.`, issues: r.missingAssets.slice(0, 5).map((m) => `${m.slug}: ${m.assets.slice(0, 3).join(", ")}${m.assets.length > 3 ? "…" : ""}`) };
   }
   return { ok: true, message: `${parts.join(", ")}. Review prices, approve and export assets, then publish.` };
+}
+
+
+/** Queues the catalog writer (AI; costs count against the AI budget). Nothing changes until someone applies it. */
+export async function suggestCopyAction(productId: string, _prev: ActionState): Promise<ActionState> {
+  const { staff, detail } = await productStaff(productId, "catalog.write");
+  if (!staff || !detail || !can(staff.grants, "production.run", detail.product.brandId)) return fail("Needs catalog.write and production.run for this brand.");
+  const { aiStatus } = await import("@/lib/server");
+  const status = aiStatus();
+  if (!status.configured) return fail(status.reason);
+  const { enqueueJob } = await import("@sb/db");
+  const job = await enqueueJob(getDb(), await requestAuditContext(staff.user.id), { brandId: detail.product.brandId, kind: "catalog", brief: { productId } });
+  revalidatePath(`/catalog/${productId}`);
+  return { ok: true, message: `Queued (${status.label}, job ${job.id}). Reload in a few seconds to see the suggestion.` };
+}
+
+export async function applyCopyAction(productId: string, jobId: string, _prev: ActionState): Promise<ActionState> {
+  const { staff } = await productStaff(productId, "catalog.write");
+  if (!staff) return fail("You can't edit this product.");
+  const db = getDb();
+  const [job] = await db.select().from(schema.productionJob).where(eq(schema.productionJob.id, jobId));
+  const result = job?.result as { productId?: string; suggestion?: { title: string; description: string } } | null;
+  if (!job || job.kind !== "catalog" || job.status !== "succeeded" || result?.productId !== productId || !result.suggestion) return fail("No suggestion to apply.");
+  try {
+    await updateProduct(db, await requestAuditContext(staff.user.id), productId, { title: result.suggestion.title, description: result.suggestion.description });
+  } catch (e) {
+    return asState(e);
+  }
+  revalidatePath(`/catalog/${productId}`);
+  return { ok: true, message: "Applied. Edit further below if needed." };
 }

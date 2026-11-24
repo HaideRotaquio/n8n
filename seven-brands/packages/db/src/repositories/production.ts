@@ -244,3 +244,14 @@ export async function listExpenses(db: Database, limit = 100) {
     .orderBy(desc(expense.incurredAt))
     .limit(Math.min(limit, 500));
 }
+
+/** The most recent catalog-copy job for a product (its result holds the suggestion). */
+export async function latestCatalogJob(db: Database, productId: string): Promise<ProductionJob | null> {
+  const [row] = await db
+    .select()
+    .from(productionJob)
+    .where(and(eq(productionJob.kind, "catalog"), sql`${productionJob.brief}->>'productId' = ${productId}`))
+    .orderBy(desc(productionJob.createdAt))
+    .limit(1);
+  return row ?? null;
+}

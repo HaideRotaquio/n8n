@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Notice } from "@sb/ui";
-import { useActionState, type ReactNode } from "react";
+import { startTransition, useActionState, type ReactNode } from "react";
 
 export interface ActionState {
   ok: boolean;
@@ -28,10 +28,14 @@ export function ActionForm({
   const [state, run, pending] = useActionState(action, { ok: false, message: "" });
   return (
     <form
-      action={run}
       className={className}
+      // Submitted manually (not via the `action` prop) so React doesn't reset the fields:
+      // after a validation error the person's input — including a chosen file — is still there.
       onSubmit={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
+        e.preventDefault();
+        if (confirm && !window.confirm(confirm)) return;
+        const data = new FormData(e.currentTarget);
+        startTransition(() => run(data));
       }}
     >
       {children}

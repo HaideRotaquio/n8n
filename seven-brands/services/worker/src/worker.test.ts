@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { FIXTURE_OUTPUTS, FixtureProvider } from "@sb/agents";
+import { freshFixtureOutputs, FixtureProvider } from "@sb/agents";
 import { addExpense, enqueueJob, getAssetDetail, getBrandBySlug, getJob, listAssets, seed, type DbHandle } from "@sb/db";
 import { createTestDb } from "@sb/db/testing";
 import { createFsDriver, type StorageDriver } from "@sb/storage";
@@ -14,7 +14,7 @@ let storage: StorageDriver;
 let dir: string;
 const ctx = { actorUserId: null };
 const quiet: WorkerLogger = { info: () => {}, error: () => {} };
-const fixtureAi = () => ({ configured: true as const, provider: new FixtureProvider(structuredClone(FIXTURE_OUTPUTS)), label: "Fixture outputs (not AI)" });
+const fixtureAi = () => ({ configured: true as const, provider: new FixtureProvider(freshFixtureOutputs()), label: "Fixture outputs (not AI)" });
 
 beforeAll(async () => {
   h = await createTestDb();
@@ -77,6 +77,22 @@ describe("AI jobs", () => {
     expect(detail.current.provenance).toBe("fixture");
     expect(detail.current.productionJobId).toBe(job.id);
     expect(detail.asset.status).toBe("in_review");
+  });
+
+  it("catalog job suggests copy for a product without changing it", async () => {
+    const { createProduct, getProductDetail } = await import("@sb/db");
+    const mood = (await getBrandBySlug(h.db, "moodicons"))!;
+    const [a] = await listAssets(h.db, [mood.id]);
+    const p = await createProduct(h.db, ctx, { brandId: mood.id, slug: "catalog-copy-test", title: "Copy Test", kind: "single", assetIds: [a!.asset.id] });
+    const job = await enqueueJob(h.db, ctx, { brandId: mood.id, kind: "catalog", brief: { productId: p.id } });
+    await drain({ db: h.db, storage, ai: fixtureAi() }, quiet);
+    const { job: done, tasks } = (await getJob(h.db, job.id))!;
+    expect(done.status, done.error ?? "").toBe("succeeded");
+    expect(tasks.map((t) => t.agent)).toEqual(["catalog_writer"]);
+    const s = (done.result as any).suggestion;
+    expect(s.title).toBe("Copy Test");
+    expect(s.description).toMatch(/Fixture copy, not AI/);
+    expect((await getProductDetail(h.db, p.id))!.product.description).toBe("");
   });
 
   it("stops at the daily AI budget without calling the model", async () => {

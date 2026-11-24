@@ -4,6 +4,7 @@ import {
   budgetFromEnv,
   providerFromEnv,
   runAiProduction,
+  runCatalogCopy,
   ProviderError,
   type ProviderStatus,
 } from "@sb/agents";
@@ -17,6 +18,7 @@ import {
   sumExpenses,
   type Database,
   type ProductionJob,
+  getProductDetail,
   getSounds,
   storedSoundIds,
 } from "@sb/db";
@@ -71,6 +73,8 @@ export async function runJob(job: ProductionJob, deps: JobDeps): Promise<unknown
       return runAiJob(job, deps);
     case "export":
       return runExportJob(job, deps);
+    case "catalog":
+      return runCatalogJob(job, deps);
   }
 }
 
@@ -105,6 +109,53 @@ async function runRigJob(job: ProductionJob, deps: JobDeps) {
   return { rig: rig.id, costUsd: 0, ...(await saveAll(job, deps, defs)) };
 }
 
+/** Throws BudgetExceededError once today's or this month's AI spend reaches the cap. */
+function budgetChecker(deps: JobDeps, budget: { dailyUsd: number; monthlyUsd: number }, now: () => Date) {
+  return async () => {
+    const n = now();
+    const day = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
+    const month = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1));
+    const [spentToday, spentMonth] = await Promise.all([sumExpenses(deps.db, { since: day, category: "ai" }), sumExpenses(deps.db, { since: month, category: "ai" })]);
+    if (spentToday >= budget.dailyUsd) throw new BudgetExceededError(`Daily AI budget of $${budget.dailyUsd} reached ($${spentToday.toFixed(2)} spent)`);
+    if (spentMonth >= budget.monthlyUsd) throw new BudgetExceededError(`Monthly AI budget of $${budget.monthlyUsd} reached ($${spentMonth.toFixed(2)} spent)`);
+  };
+}
+
+export const CatalogBrief = z.object({ productId: z.string() });
+
+/** Catalog writer: suggests title, description, tags and alt text. Stored as the job result; a person applies it. */
+async function runCatalogJob(job: ProductionJob, deps: JobDeps) {
+  const brief = CatalogBrief.safeParse(job.brief);
+  if (!brief.success) throw new PermanentJobError("Invalid catalog brief");
+  const ai = deps.ai ?? providerFromEnv();
+  if (!ai.configured) throw new PermanentJobError(ai.reason);
+  const detail = await getProductDetail(deps.db, brief.data.productId);
+  if (!detail || detail.product.brandId !== job.brandId) throw new PermanentJobError("Product not found for this brand");
+  try {
+    const suggestion = await runCatalogCopy(
+      detail.brand.config,
+      {
+        kind: detail.product.kind,
+        currentTitle: detail.product.title,
+        formats: ALL_FORMATS.join(", "),
+        assets: detail.assets.map((a) => ({ name: a.asset.name, label: a.definition.a11y.label, category: a.definition.category ?? null, tags: a.definition.tags, durationMs: a.definition.timeline.duration, sounds: a.definition.sounds.length })),
+      },
+      {
+        provider: ai.provider,
+        onAgentCall: async (rec) => {
+          await recordAgentTask(deps.db, { productionJobId: job.id, brandId: job.brandId, ...rec });
+        },
+        checkBudget: budgetChecker(deps, deps.budget ?? budgetFromEnv(), deps.now ?? (() => new Date())),
+      },
+    );
+    return { provider: ai.label, productId: detail.product.id, suggestion };
+  } catch (err) {
+    if (err instanceof BudgetExceededError) throw new PermanentJobError(err.message);
+    if (err instanceof ProviderError && !err.retryable) throw new PermanentJobError(err.message);
+    throw err;
+  }
+}
+
 async function runAiJob(job: ProductionJob, deps: JobDeps) {
   const brief = AiBrief.safeParse(job.brief);
   if (!brief.success) throw new PermanentJobError("Invalid AI brief");
@@ -121,17 +172,7 @@ async function runAiJob(job: ProductionJob, deps: JobDeps) {
       onAgentCall: async (rec) => {
         await recordAgentTask(deps.db, { productionJobId: job.id, brandId: job.brandId, ...rec });
       },
-      checkBudget: async () => {
-        const n = now();
-        const day = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
-        const month = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1));
-        const [spentToday, spentMonth] = await Promise.all([
-          sumExpenses(deps.db, { since: day, category: "ai" }),
-          sumExpenses(deps.db, { since: month, category: "ai" }),
-        ]);
-        if (spentToday >= budget.dailyUsd) throw new BudgetExceededError(`Daily AI budget of $${budget.dailyUsd} reached ($${spentToday.toFixed(2)} spent)`);
-        if (spentMonth >= budget.monthlyUsd) throw new BudgetExceededError(`Monthly AI budget of $${budget.monthlyUsd} reached ($${spentMonth.toFixed(2)} spent)`);
-      },
+      checkBudget: budgetChecker(deps, budget, now),
     });
     const saved = await saveAll(job, deps, [result.definition]);
     return { provider: ai.label, concept: result.concept.name, importWarnings: result.importWarnings, ...saved };

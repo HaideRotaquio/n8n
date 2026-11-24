@@ -99,3 +99,22 @@ Rules:
 - Opacity stays between 0 and 1. Keep movement inside the 64x64 frame (translate within ±6, scale 0.8-1.3).
 - Sounds: available presets ${PRESET_IDS.join(", ")}. Place a marker at each impact moment and start sounds there.`;
 }
+
+// ─── Catalog writer ──────────────────────────────────────────────────────────
+
+export const CatalogCopySchema = z.object({
+  title: z.string().describe("Product title, 2-6 words, Title Case, no brand name"),
+  description: z.string().describe("1-3 plain sentences, at most 400 characters: what it shows, how it moves, where to use it"),
+  tags: z.array(z.string()).describe("5-10 lowercase search tags"),
+  altText: z.string().describe("One short sentence describing the main icon for screen readers"),
+});
+export type CatalogCopy = z.infer<typeof CatalogCopySchema>;
+
+export function catalogWriterPrompt(brand: BrandConfig): string {
+  return `You write store copy for ${brand.name} (${brand.category}). Tagline: "${brand.tagline}".
+Audiences: ${brand.audiences.join(", ")}.
+Write a product title, a short description, search tags and alt text from the facts given.
+Voice: plain, specific, friendly; no hype words ("ultimate", "stunning", "best"), no exclamation marks, no emoji.
+Only claim what the facts say: formats, sound, color styles and motion. Never invent features, numbers or awards.
+Never mention AI, prices or other brands.`;
+}
