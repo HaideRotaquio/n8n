@@ -21,9 +21,14 @@
     }
   },
   "globalPassThroughEnv": [
-    "MOTO_SERVER_BIN",
-    "TEST_DATABASE_URL",
+    "CHROMIUM_PATH",
+    "DAOS_ANTHROPIC_API_KEY",
+    "DAOS_ANTHROPIC_BASE_URL",
+    "DATABASE_URL",
     "E2E_DATABASE_URL",
-    "DATABASE_URL"
+    "FFMPEG_PATH",
+    "MOTO_SERVER_BIN",
+    "PLAYWRIGHT_BROWSERS_PATH",
+    "TEST_DATABASE_URL"
   ]
 }

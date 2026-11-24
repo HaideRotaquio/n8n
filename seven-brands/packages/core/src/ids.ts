@@ -1,5 +1,3 @@
-import { randomBytes } from "node:crypto";
-
 /**
  * Prefixed, time-sortable identifiers (ULID layout: 48-bit ms timestamp + 80 bits of randomness,
  * Crockford base32). Example: `brd_01JD3K6Q9W8X2Y4Z6A8B0C2D4E`.
@@ -28,7 +26,8 @@ function encodeTime(ms: number): string {
 }
 
 function encodeRandom(): string {
-  const bytes = randomBytes(16);
+  // Web Crypto works in Node 19+ and browsers alike.
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
   let out = "";
   for (let i = 0; i < 16; i++) out += ALPHABET[bytes[i]! % 32];
   return out;

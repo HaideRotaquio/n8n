@@ -1,0 +1,21 @@
+{
+  "name": "@sb/export",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@sb/asset": "workspace:*",
+    "@sb/audio": "workspace:*",
+    "@sb/player": "workspace:*",
+    "esbuild": "^0.28.2",
+    "fflate": "^0.8.3"
+  }
+}

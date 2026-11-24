@@ -50,12 +50,14 @@ jobs:
         run: |
           pip install --quiet "moto[server]"
           echo "MOTO_SERVER_BIN=$(which moto_server)" >> "$GITHUB_ENV"
+      - name: Install Playwright browser and ffmpeg (player + export tests)
+        run: |
+          pnpm --filter @sb/admin exec playwright install --with-deps chromium
+          sudo apt-get install -y --no-install-recommends ffmpeg
       - run: pnpm typecheck
       - run: pnpm test
       - name: Create E2E database
         run: PGPASSWORD=daos_dev_only psql -h localhost -U daos -d daos_test -c "CREATE DATABASE daos_e2e_test"
-      - name: Install Playwright browser
-        run: pnpm --filter @sb/admin exec playwright install --with-deps chromium
       - run: pnpm e2e
         env:
           DATABASE_URL: postgres://daos:daos_dev_only@localhost:5432/daos_e2e_test

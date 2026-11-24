@@ -1,0 +1,22 @@
+{
+  "name": "@sb/player",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./element": "./src/element.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sb/audio": "workspace:*"
+  },
+  "devDependencies": {
+    "@sb/asset": "workspace:*",
+    "esbuild": "^0.28.2",
+    "playwright": "1.63.0"
+  }
+}
