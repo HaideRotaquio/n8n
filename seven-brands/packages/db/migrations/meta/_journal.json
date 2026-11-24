@@ -29,6 +29,13 @@
       "when": 1795541308410,
       "tag": "0003_asset_version_immutable",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795544817261,
+      "tag": "0004_commerce",
+      "breakpoints": true
     }
   ]
 }

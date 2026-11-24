@@ -399,3 +399,322 @@ export type AssetVersion = typeof assetVersion.$inferSelect;
 export type ProductionJob = typeof productionJob.$inferSelect;
 export type AgentTask = typeof agentTask.$inferSelect;
 export type Expense = typeof expense.$inferSelect;
+
+// ─── Phase 3: catalog & commerce ─────────────────────────────────────────────
+
+export const CATALOG_STATUSES = ["draft", "published", "archived"] as const;
+export const catalogStatus = pgEnum("catalog_status", CATALOG_STATUSES);
+export const PRODUCT_KINDS = ["single", "pack"] as const;
+export const productKind = pgEnum("product_kind", PRODUCT_KINDS);
+export const PAYMENT_PROVIDERS = ["lemonsqueezy", "paddle", "test"] as const;
+export const paymentProvider = pgEnum("payment_provider", PAYMENT_PROVIDERS);
+export const CHECKOUT_STATUSES = ["open", "completed", "expired", "failed"] as const;
+export const checkoutStatus = pgEnum("checkout_status", CHECKOUT_STATUSES);
+export const ORDER_STATUSES = ["paid", "partially_refunded", "refunded"] as const;
+export const orderStatus = pgEnum("order_status", ORDER_STATUSES);
+export const REFUND_STATUSES = ["requested", "rejected", "submitted", "completed", "failed"] as const;
+export const refundStatus = pgEnum("refund_status", REFUND_STATUSES);
+
+export const collection = pgTable(
+  "collection",
+  {
+    id: text("id").primaryKey(),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brand.id, { onDelete: "restrict" }),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    status: catalogStatus("status").notNull().default("draft"),
+    ...timestamps,
+  },
+  (t) => [unique("collection_brand_slug_unique").on(t.brandId, t.slug), check("collection_slug_format", sql`${t.slug} ~ '^[a-z0-9-]{2,80}$'`)],
+);
+
+export const collectionProduct = pgTable(
+  "collection_product",
+  {
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => collection.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+    position: integer("position").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.collectionId, t.productId] })],
+);
+
+/** What customers buy: one asset (single) or several (pack), sold under per-license prices. */
+export const product = pgTable(
+  "product",
+  {
+    id: text("id").primaryKey(),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brand.id, { onDelete: "restrict" }),
+    slug: text("slug").notNull(),
+    kind: productKind("kind").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    status: catalogStatus("status").notNull().default("draft"),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    publishedBy: text("published_by").references(() => user.id, { onDelete: "set null" }),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    unique("product_brand_slug_unique").on(t.brandId, t.slug),
+    index("product_brand_status_idx").on(t.brandId, t.status, t.publishedAt),
+    check("product_slug_format", sql`${t.slug} ~ '^[a-z0-9-]{2,80}$'`),
+  ],
+);
+
+export const productAsset = pgTable(
+  "product_asset",
+  {
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => asset.id, { onDelete: "restrict" }),
+    position: integer("position").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.productId, t.assetId] }), index("product_asset_asset_idx").on(t.assetId)],
+);
+
+/** One price per (product, license type, currency). Orders snapshot the amount, so edits never change past orders. */
+export const price = pgTable(
+  "price",
+  {
+    id: text("id").primaryKey(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+    licenseType: text("license_type").notNull(),
+    currency: char("currency", { length: 3 }).notNull().default("USD"),
+    amountCents: integer("amount_cents").notNull(),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [
+    unique("price_product_license_currency_unique").on(t.productId, t.licenseType, t.currency),
+    check("price_amount_range", sql`${t.amountCents} >= 0 AND ${t.amountCents} <= 10000000`),
+    check("price_currency_format", sql`${t.currency} ~ '^[A-Z]{3}$'`),
+  ],
+);
+
+/** Created before redirecting to the provider; the webhook finds it via custom data and never trusts client-side prices. */
+export const checkoutSession = pgTable(
+  "checkout_session",
+  {
+    id: text("id").primaryKey(),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brand.id, { onDelete: "restrict" }),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => customer.id, { onDelete: "restrict" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "restrict" }),
+    priceId: text("price_id")
+      .notNull()
+      .references(() => price.id, { onDelete: "restrict" }),
+    licenseType: text("license_type").notNull(),
+    currency: char("currency", { length: 3 }).notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    provider: paymentProvider("provider").notNull(),
+    providerCheckoutId: text("provider_checkout_id"),
+    url: text("url"),
+    status: checkoutStatus("status").notNull().default("open"),
+    testMode: boolean("test_mode").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("checkout_customer_idx").on(t.customerId, t.createdAt)],
+);
+
+export const order = pgTable(
+  "order",
+  {
+    id: text("id").primaryKey(),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brand.id, { onDelete: "restrict" }),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => customer.id, { onDelete: "restrict" }),
+    checkoutSessionId: text("checkout_session_id").references(() => checkoutSession.id, { onDelete: "set null" }),
+    provider: paymentProvider("provider").notNull(),
+    providerOrderId: text("provider_order_id").notNull(),
+    status: orderStatus("status").notNull().default("paid"),
+    currency: char("currency", { length: 3 }).notNull(),
+    subtotalCents: integer("subtotal_cents").notNull(),
+    taxCents: integer("tax_cents").notNull().default(0),
+    totalCents: integer("total_cents").notNull(),
+    feeCents: integer("fee_cents"),
+    refundedCents: integer("refunded_cents").notNull().default(0),
+    email: text("email"),
+    testMode: boolean("test_mode").notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true }).notNull(),
+    refundedAt: timestamp("refunded_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    unique("order_provider_unique").on(t.provider, t.providerOrderId),
+    index("order_brand_time_idx").on(t.brandId, t.paidAt),
+    index("order_customer_idx").on(t.customerId, t.paidAt),
+  ],
+);
+
+export const orderItem = pgTable(
+  "order_item",
+  {
+    id: text("id").primaryKey(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => order.id, { onDelete: "restrict" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "restrict" }),
+    priceId: text("price_id").references(() => price.id, { onDelete: "set null" }),
+    licenseType: text("license_type").notNull(),
+    titleSnapshot: text("title_snapshot").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    currency: char("currency", { length: 3 }).notNull(),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [index("order_item_order_idx").on(t.orderId)],
+);
+
+/** Every received webhook, valid or not. The unique key makes processing idempotent. */
+export const webhookEvent = pgTable(
+  "webhook_event",
+  {
+    id: text("id").primaryKey(),
+    provider: paymentProvider("provider").notNull(),
+    eventId: text("event_id").notNull(),
+    eventType: text("event_type").notNull(),
+    payload: jsonb("payload").notNull(),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    outcome: text("outcome"),
+    error: text("error"),
+    attempts: integer("attempts").notNull().default(0),
+  },
+  (t) => [unique("webhook_event_unique").on(t.provider, t.eventId), index("webhook_event_time_idx").on(t.receivedAt)],
+);
+
+/** A license certificate: what the buyer may do with the product. Codes are unique and verifiable. */
+export const license = pgTable(
+  "license",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull().unique(),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brand.id, { onDelete: "restrict" }),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => customer.id, { onDelete: "restrict" }),
+    orderItemId: text("order_item_id")
+      .notNull()
+      .unique()
+      .references(() => orderItem.id, { onDelete: "restrict" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "restrict" }),
+    licenseType: text("license_type").notNull(),
+    termsVersion: text("terms_version").notNull(),
+    licenseeName: text("licensee_name").notNull(),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedReason: text("revoked_reason"),
+  },
+  (t) => [index("license_customer_idx").on(t.customerId), index("license_brand_idx").on(t.brandId, t.issuedAt)],
+);
+
+/** Access to a product's files. Granted only by a verified payment webhook (or an audited staff grant). */
+export const entitlement = pgTable(
+  "entitlement",
+  {
+    id: text("id").primaryKey(),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brand.id, { onDelete: "restrict" }),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => customer.id, { onDelete: "restrict" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "restrict" }),
+    licenseId: text("license_id").references(() => license.id, { onDelete: "restrict" }),
+    /** "order" or "staff_grant". */
+    source: text("source").notNull(),
+    grantedBy: text("granted_by").references(() => user.id, { onDelete: "set null" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedReason: text("revoked_reason"),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [index("entitlement_customer_idx").on(t.customerId, t.productId)],
+);
+
+/** One row per issued download link (abuse limits and support history). IPs are stored hashed. */
+export const download = pgTable(
+  "download",
+  {
+    id: text("id").primaryKey(),
+    entitlementId: text("entitlement_id")
+      .notNull()
+      .references(() => entitlement.id, { onDelete: "cascade" }),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => customer.id, { onDelete: "cascade" }),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => asset.id, { onDelete: "cascade" }),
+    assetVersion: integer("asset_version").notNull(),
+    ipHash: text("ip_hash"),
+    userAgent: text("user_agent"),
+    createdAt: timestamps.createdAt,
+  },
+  (t) => [index("download_customer_time_idx").on(t.customerId, t.createdAt)],
+);
+
+/** Refunds always need an owner's approval before money moves. */
+export const refundRequest = pgTable(
+  "refund_request",
+  {
+    id: text("id").primaryKey(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => order.id, { onDelete: "restrict" }),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brand.id, { onDelete: "restrict" }),
+    amountCents: integer("amount_cents").notNull(),
+    reason: text("reason").notNull(),
+    status: refundStatus("status").notNull().default("requested"),
+    requestedBy: text("requested_by").references(() => user.id, { onDelete: "set null" }),
+    decidedBy: text("decided_by").references(() => user.id, { onDelete: "set null" }),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    providerRefundId: text("provider_refund_id"),
+    error: text("error"),
+    ...timestamps,
+  },
+  (t) => [index("refund_request_status_idx").on(t.status, t.createdAt), check("refund_amount_positive", sql`${t.amountCents} > 0`)],
+);
+
+export type Collection = typeof collection.$inferSelect;
+export type Product = typeof product.$inferSelect;
+export type Price = typeof price.$inferSelect;
+export type CheckoutSession = typeof checkoutSession.$inferSelect;
+export type Order = typeof order.$inferSelect;
+export type OrderItem = typeof orderItem.$inferSelect;
+export type WebhookEvent = typeof webhookEvent.$inferSelect;
+export type License = typeof license.$inferSelect;
+export type Entitlement = typeof entitlement.$inferSelect;
+export type Download = typeof download.$inferSelect;
+export type RefundRequest = typeof refundRequest.$inferSelect;

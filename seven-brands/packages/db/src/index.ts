@@ -9,3 +9,7 @@ export type { Asset, AssetVersion, ProductionJob, AgentTask, Expense } from "./s
 export { ASSET_STATUSES, JOB_KINDS, JOB_STATUSES, EXPENSE_CATEGORIES } from "./schema";
 export * from "./repositories/assets";
 export * from "./repositories/production";
+export * from "./repositories/catalog";
+export * from "./repositories/commerce";
+export type { Collection, Product, Price, CheckoutSession, Order, OrderItem, WebhookEvent, License, Entitlement, Download, RefundRequest } from "./schema";
+export { CATALOG_STATUSES, PRODUCT_KINDS, PAYMENT_PROVIDERS, ORDER_STATUSES, REFUND_STATUSES } from "./schema";
