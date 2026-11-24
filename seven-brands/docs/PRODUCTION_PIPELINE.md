@@ -11,7 +11,7 @@ Every product is a versioned JSON document (`asset_version.definition`, immutabl
 | `viewBox`, `layers` | Tree of groups and shapes (path, circle, ellipse, rect, line, polygon, polyline). Path data and points are validated character-by-character. |
 | `tokens` | Named `#RRGGBB` colors; layers reference them (`{ token: "primary" }`). Customers can change them. |
 | `timeline` | Duration, loop (forever / N / once), tracks (translate, rotate, scale, scaleX/Y, opacity) with keyframes and easing (linear, ease presets, cubic-bezier, physical springs), and named markers. |
-| `sounds` | Cues at a time or marker: `synth:<preset>` (procedural, owned) or `snd_…` (stored, licensed — Phase 3). |
+| `sounds` | Cues at a time or marker: `synth:<preset>` (procedural, owned) or `snd_…` (stored, licensed — Phase 4). |
 | `interactions` | load / hover / click / focus / inView → play, restart, toggle, playSound. |
 | `a11y` | Label and the still frame shown under reduced motion. |
 | `provenance` | `rig`, `ai-assisted`, `manual` or `fixture`. |
@@ -31,7 +31,7 @@ One motion evaluator (`packages/asset/src/motion.ts`) drives every output, so al
 ```
 Admin "Production factory" ──enqueue──▶ production_job (status queued) ──NOTIFY daos_jobs──▶ worker
 worker: claim (FOR UPDATE SKIP LOCKED) → run → save version(s) + automated QA → succeeded / retry / failed
-asset: draft (QA failed) | in_review (QA passed) ──human review──▶ approved / rejected ──(Phase 3)──▶ published
+asset: draft (QA failed) | in_review (QA passed) ──human review──▶ approved / rejected ──(product published, `asset.publish`)──▶ published
 ```
 
 - Retries with backoff for transient errors; permanent errors (bad brief, missing AI config, budget reached, refusals) fail immediately.
@@ -63,4 +63,6 @@ Export jobs store files under `brands/<brand>/assets/<asset>/v<n>/` and record `
 
 ## Not yet built
 
-Lottie export, stored (non-synth) sounds, SVG upload UI, batch API for large AI collections, catalog/metadata agent (Phase 3).
+Lottie export, stored (non-synth) sounds, SVG upload UI, batch API for large AI collections, catalog/metadata agent (Phase 4).
+
+Publishing (Phase 3): an approved asset with an export package goes on sale as part of a product. A newer version stays out of buyers' hands until a reviewer approves it and it is exported; buyers then get it as a free update.

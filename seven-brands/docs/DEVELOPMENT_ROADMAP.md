@@ -7,8 +7,8 @@ Each phase ends with passing tests, updated docs and a report. Calendar estimate
 | 0 Discovery | Inspection, architecture, costs, risks, MVP | ✅ 2026-11-24 |
 | 1 Foundation | Monorepo, DB, auth/RBAC, brand config, storage, admin shell, API v1, CI, docs | ✅ 2026-11-24 |
 | 2 Production engine | Asset Definition schema, SVG engine, motion runtime, audio, sync, viewer, export engine, worker + jobs, agents, expense tracking | ✅ 2026-11-24 (live AI run pending API key) |
-| 3 Commerce | Catalog, collections, prices, MoR checkout (test mode), webhooks, entitlements, licenses, downloads, orders, customer accounts | Next |
-| 4 Moodicons + SonicGlyphs | Multi-tenant storefront, two distinct designs, content production (~60 + ~40 assets), staging deploy | |
+| 3 Commerce | Catalog, collections, prices, MoR checkout (test mode), webhooks, entitlements, licenses, downloads, orders, customer accounts | ✅ 2026-11-24 (provider sandbox runs pending accounts) |
+| 4 Moodicons + SonicGlyphs | Two distinct storefront designs on the Phase 3 storefront, content production (~60 + ~40 assets), Lottie export, stored sounds, catalog agent, staging deploy | Next |
 | — Validation gate | Real traffic + live payments **after owner approval**; thresholds below | |
 | 5 CineGlyphs + AtmosIcons | WebM-alpha + ambient-loop exports, video-editor packaging | Gated |
 | 6 ShopMotion + LearnIcons | Shopify packaging; child-safety and privacy review for LearnIcons | Gated |
@@ -19,13 +19,16 @@ Each phase ends with passing tests, updated docs and a report. Calendar estimate
 
 Delivered as planned, with two changes: the job queue is the `production_job` table (claimed with `FOR UPDATE SKIP LOCKED`, woken by `NOTIFY`) instead of pg-boss — one less dependency, and jobs are visible in the admin; and Lottie export moved to Phase 3. Starter content: 9 Moodicons + 8 SonicGlyphs from rigs (plus palette variants on demand).
 
-## Phase 3 plan (next)
+## Phase 3 outcome
 
-1. Product, collection, price tables; product = approved asset(s) + license tiers; publish action (`asset.publish`).
-2. Merchant-of-Record adapter (Lemon Squeezy or Paddle — owner chooses) in **test mode**; signed webhooks + idempotency.
-3. Customer accounts (Better Auth sign-up on storefronts), entitlements, licenses (unique codes, verify endpoint), real LICENSE.txt in packages.
-4. Download library with signed URLs and abuse limits; order history; refunds require owner approval.
-5. Catalog/metadata agent; Lottie export; stored sound library with license records.
+Items 1–4 of the plan are done; the owner chose to build **both** Lemon Squeezy and Paddle behind one interface.
+
+1. Products (single or pack), prices per license type, collections; publishing needs reviewer-approved, exported assets and `asset.publish`. Buyers always get each asset's newest approved version.
+2. `@sb/commerce`: Lemon Squeezy and Paddle adapters (test mode / sandbox), a labelled test provider for development and E2E, signed + idempotent webhooks. Live credentials are refused until `COMMERCE_LIVE_PAYMENTS=enabled`.
+3. `apps/storefront`: one host-routed app for all brands, customer accounts, checkout, licenses with unique codes, public verification, real `LICENSE.txt` in every download.
+4. Library with signed, rate-limited downloads; order history; data export; refunds requested by support and approved by an owner.
+
+**Moved to Phase 4** (item 5): catalog/metadata agent (needs the Anthropic credits), Lottie export, stored sound library. **Not done:** a real sandbox purchase — there are no provider accounts yet (see `PAYMENTS_SETUP.md`).
 
 ## Validation thresholds (initial hypotheses, owner to adjust)
 
@@ -34,5 +37,6 @@ Per launched brand, within 8 weeks: ≥1,000 visitors from target channels · �
 ## Owner actions outside the code
 
 - Phase 2: Anthropic API key with a monthly spend limit.
-- Phase 3: apply to Paddle and/or Lemon Squeezy (needs live site, terms, refund policy); check Philippine payout eligibility.
+- Phase 3: create **test-mode** accounts at Lemon Squeezy and Paddle (sandbox) and follow `PAYMENTS_SETUP.md`; later apply for live approval (needs a live site, terms, refund policy) and check Philippine payout eligibility.
+- Anthropic: add API credits so the pending live AI production test can run.
 - Before launch: trademark search for brand names, then domains; lawyer review of license terms and privacy policy.

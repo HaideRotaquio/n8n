@@ -27,12 +27,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const shopper = await getShopper();
   const active = getCommerce().active;
   const c = store.brand.config;
+  const vars = themeToCssVars(c.theme);
+  // Fully rounded brands: keep cards readable (pills only suit small controls). Phase 4 designs replace this.
+  if (vars["--radius"] === "9999px") vars["--radius"] = "20px";
   return (
     <html lang="en">
-      <body className="flex min-h-screen flex-col antialiased" style={themeToCssVars(c.theme) as CSSProperties}>
+      <body className="flex min-h-screen flex-col antialiased" style={vars as CSSProperties}>
         {active?.testMode && (
           <p className="bg-amber-300 px-4 py-1 text-center text-xs font-medium text-amber-950" role="status">
-            Test mode — {active.label}. No real payments are taken.
+            Test mode — no real payments are taken.
           </p>
         )}
         <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">

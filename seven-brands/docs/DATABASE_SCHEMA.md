@@ -33,12 +33,31 @@ Conventions: text primary keys with type prefixes (`brd_…`, `usr_…`, ULID-ba
 | `agent_task` | Every model call: provider, model, tokens, cost, duration, error | FK job cascade |
 | `expense` | AI costs (automatic) and manual costs by brand/category | amount ≥ 0 |
 
-## Planned (Phase 3+)
+## Implemented (Phase 3)
+
+| Table | Purpose | Key constraints |
+|---|---|---|
+| `product` | What customers buy: `single` (1 asset) or `pack` (2–100); `draft → published → archived` | `UNIQUE (brand_id, slug)`; slug format check |
+| `product_asset` | Assets in a product, ordered | PK (product, asset); asset FK restrict |
+| `price` | One price per (product, license type, currency), in cents; can be hidden | `UNIQUE (product_id, license_type, currency)`; 0–10,000,000 cents |
+| `collection`, `collection_product` | Curated product groups per brand | `UNIQUE (brand_id, slug)` |
+| `checkout_session` | What a customer is buying, at the DB price, before the provider redirect; matched by the webhook | status open/completed/expired/failed |
+| `order` | A paid purchase (created only by a verified webhook); totals, tax, provider fee, refunded amount, test flag | `UNIQUE (provider, provider_order_id)` |
+| `order_item` | Product, license and price snapshot | |
+| `webhook_event` | Every verified webhook with outcome/error and delivery count | `UNIQUE (provider, event_id)` → idempotency |
+| `license` | Certificate: unique code, type, terms version, licensee name, revocation | `code` unique; one per order item |
+| `entitlement` | Access to a product's files (from an order or a staff grant); revocable | |
+| `download` | Each issued link: asset, version, salted IP hash, user agent (limits + support) | index (customer, time) |
+| `refund_request` | Staff request → owner decision → provider confirmation; dashboard refunds recorded as completed rows | `UNIQUE (order_id, provider_refund_id)`; amount > 0 |
+
+Not built from the Phase 0 design: `payment` (one payment per order, so totals live on `order`), `subscription` (no subscriptions sold yet), `revenue_record` (revenue is computed from `order`).
+
+## Planned (Phase 4+)
 
 Designed in `PHASE_0_REPORT.md` §8; added by migration as each phase begins:
 
 - **Assets (later):** `sound_asset` (stored sounds with license records), `publishing_job`.
-- **Catalog & commerce (P3):** `collection`, `collection_asset`, `product`, `product_asset`, `price`, `product_file`, `order`, `order_item`, `payment`, `webhook_event` (unique provider event id → idempotency), `subscription`, `entitlement`, `license` (unique code), `download`, `revenue_record`.
+- **Commerce (later):** `subscription` (if memberships are sold), `revenue_record` (FX-normalized reporting once non-USD sales exist).
 - **Analytics (P4):** `analytics_event`, partitioned by month.
 
 ## Brand isolation

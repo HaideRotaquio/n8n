@@ -36,6 +36,7 @@
     "@types/react-dom": "^19.3.0",
     "postcss": "^8.5.33",
     "tailwindcss": "^4.3.5",
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "@sb/asset": "workspace:*"
   }
 }

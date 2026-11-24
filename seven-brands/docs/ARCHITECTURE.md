@@ -1,6 +1,6 @@
 # Architecture
 
-Status: Phases 1–2 implemented. Sections marked *(planned)* are designs, not code.
+Status: Phases 1–3 implemented. Sections marked *(planned)* are designs, not code.
 
 ## Principles
 
@@ -39,7 +39,7 @@ Browser ──HTTPS──▶ apps/admin (Next.js, Node runtime)
 - `brand` row = status, launch phase and `config` JSONB (validated `BrandConfig`).
 - Code defaults in `brands/src/index.ts`; the seed creates missing brands and **never overwrites** admin edits.
 - Admins may change only `BrandConfigPatch` fields (name, tagline, description, domains, audiences, channels, color tokens). Structural fields (slug, layout, fonts, features, licenses) change in code, under review and tests.
-- *(Phase 4)* `apps/storefront`: one Next.js deployment. The request host resolves to a brand (`resolveBrandByHost`); the brand's layout family (`playful-grid`, `studio-dark`, …) selects distinct page compositions; theme tokens become CSS variables.
+- `apps/storefront` (Phase 3; brand designs in Phase 4): one Next.js deployment. The request host resolves to a brand (`resolveBrandByHost`); the brand's layout family (`playful-grid`, `studio-dark`, …) selects distinct page compositions; theme tokens become CSS variables.
 
 ## Access control
 
@@ -63,14 +63,17 @@ Browser ──HTTPS──▶ apps/admin (Next.js, Node runtime)
 | Agents | `packages/agents` | Provider interface, Anthropic adapter, fixtures, pipeline |
 | Worker | `services/worker` | Table-backed queue (`production_job`), LISTEN/NOTIFY, retries, stale recovery |
 
-Runtime now: `apps/admin` (Next.js) + `services/worker` (Node, needs ffmpeg) sharing Postgres and object storage.
-
-## Planned (Phases 3–4)
+## Commerce components (Phase 3, implemented)
 
 | Component | Package | Notes |
 |---|---|---|
-| Commerce | `packages/commerce` | Merchant-of-Record adapter, webhooks, entitlements, licenses |
-| Storefront | `apps/storefront` | Multi-tenant, host-routed |
+| Catalog & orders data | `packages/db` (`catalog.ts`, `commerce.ts`) | Products, prices, collections, checkout sessions, orders, licenses, entitlements, downloads, refunds |
+| Commerce | `packages/commerce` | `PaymentProvider` interface; Lemon Squeezy, Paddle and test adapters; webhook handler; license text + package personalization |
+| Storefront | `apps/storefront` | One Next.js app for every brand, brand from host; accounts, checkout, library, downloads, license verification, webhooks |
+
+Purchase flow: storefront creates a `checkout_session` at today's DB price → provider checkout (custom data carries the session id) → signed webhook → `fulfillPaidOrder` checks it against the session → order + license + entitlement in one transaction → library download re-checks the entitlement and serves a ZIP whose `LICENSE.txt` names the buyer.
+
+Runtime now: `apps/admin` + `apps/storefront` (Next.js) + `services/worker` (Node, needs ffmpeg) sharing Postgres and object storage.
 
 ## Key technology decisions
 

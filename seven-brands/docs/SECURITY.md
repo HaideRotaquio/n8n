@@ -32,10 +32,26 @@
 | Key isolation | Provider reads only `DAOS_ANTHROPIC_*`; never the dev tooling's `ANTHROPIC_BASE_URL` | agents.test |
 | Brand isolation | Jobs/exports refuse cross-brand assets; listings scoped | worker.test, e2e |
 
+## Implemented (Phase 3)
+
+| Control | Implementation | Test |
+|---|---|---|
+| Webhook authenticity | Lemon Squeezy HMAC of the raw body; Paddle HMAC of `ts:body` with a 60 s window and rotation support; constant-time comparison; invalid → 401, nothing stored | commerce.test |
+| Idempotency | `webhook_event` unique per (provider, event id); orders unique per (provider, provider order id); refunds unique per (order, provider refund id); replays change nothing | commerce.test, db commerce.test |
+| Price integrity | Prices come only from our DB at checkout time (`checkout_session`); the webhook must match provider, currency, test mode and at least the checkout amount, or nothing is granted | db commerce.test, commerce.test |
+| Live-payment gate | Live credentials are refused unless `COMMERCE_LIVE_PAYMENTS=enabled`; the test provider is refused when `DEPLOY_ENV=production` and its orders never count as revenue | commerce.test |
+| Entitlement checks | Every download re-checks ownership, revocation, product membership and a reviewer-approved deliverable version; customers can't reach other customers' items | db commerce.test, storefront e2e |
+| Download abuse | 30/hour and 150/day per customer; every link logged with a salted IP hash; 5-minute signed URLs | db commerce.test |
+| Refund approval | Support requests; only `order.refund` (owner) approves; money moves only after approval; full refund revokes license + access; all steps audited | db commerce.test, admin e2e |
+| Brand isolation (storefront) | Brand from host only; unknown hosts 404; per-host auth instances and cookies | storefront e2e |
+| License verification | Public endpoint returns initials only; 80-bit random codes make guessing impractical | db commerce.test, storefront e2e |
+| Privacy | Marketing consent is opt-in with a timestamp; customers download all their data from their account | db commerce.test, storefront e2e |
+
 ## Planned
 
 - **SVG upload UI:** file type sniffing and size limits in front of the importer.
-- **Phase 3:** payment webhook signature verification + idempotency table; entitlement checks before every download URL; license verification endpoint; GDPR / PH Data Privacy Act export and deletion.
+- **Customer account deletion** (right to erasure): needs a decision on keeping order/license records the law requires vs. anonymizing the person; export already exists.
+- **Rate limit on the public license-verification endpoint** (not needed for secrecy, but cheap insurance against scraping load).
 - **Before launch:** 2FA for staff (Better Auth plugin), Sentry, dependency audit in CI, backup restore drill, CSP header, external review of license terms.
 
 ## Known issues

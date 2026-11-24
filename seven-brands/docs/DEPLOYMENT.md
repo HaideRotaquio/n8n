@@ -15,7 +15,9 @@ Fallback if Workers compatibility blocks us: Vercel Pro or a single VPS (Docker 
 
 ## Environment variables
 
-See `.env.example`. Required in production: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `ADMIN_BASE_URL`, `STORAGE_DRIVER=s3` + `S3_*`. Set secrets in the platform's secret store, never in files.
+See `.env.example`. Required in production: `DATABASE_URL`, `BETTER_AUTH_SECRET` (≥32 chars), `ADMIN_BASE_URL`, `STORAGE_DRIVER=s3` + `S3_*`, `DEPLOY_ENV=production`, and the payment provider settings (`COMMERCE_PROVIDER` + `LEMONSQUEEZY_*` or `PADDLE_*`; see `PAYMENTS_SETUP.md`). Set secrets in the platform's secret store, never in files. Never set `COMMERCE_TEST_SECRET` on a public deployment. `COMMERCE_LIVE_PAYMENTS=enabled` is the owner's switch for real money, after the validation gate.
+
+The storefront is one deployment for every brand: point each brand domain at it and list the domain in the brand's settings (admin → Brands). Webhook URL for the providers: `https://<any brand domain>/api/webhooks/<provider>`.
 
 ## Release steps
 
@@ -32,7 +34,10 @@ See `.env.example`. Required in production: `DATABASE_URL`, `BETTER_AUTH_SECRET`
 pnpm db:migrate && pnpm db:seed
 pnpm --filter @sb/admin dev              # http://localhost:3100
 pnpm --filter @sb/worker start           # runs queued jobs (Ctrl+C to stop); add --once to drain and exit
+pnpm --filter @sb/storefront dev         # http://moodicons.localhost:3200 (each brand at <slug>.localhost)
 ```
+
+With `COMMERCE_PROVIDER=test` and a `COMMERCE_TEST_SECRET`, checkout goes to a clearly labelled test page instead of a real provider. Use an absolute `STORAGE_FS_ROOT` so the admin, storefront and worker share files.
 
 ## Local development (Docker)
 

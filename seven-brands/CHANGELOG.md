@@ -2,6 +2,30 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.3.0] — 2026-11-24 — Phase 3: Commerce
+
+### Added
+- DB (migration 0004): product, product_asset, price, collection, collection_product, checkout_session, order, order_item, webhook_event, license, entitlement, download, refund_request.
+- Catalog: single and pack products, a price per license type, collections; publishing needs `asset.publish` and reviewer-approved, exported assets. Buyers get each asset's newest approved version; unreviewed versions never reach them.
+- `@sb/commerce`: provider-neutral `PaymentProvider` with **Lemon Squeezy** (test mode) and **Paddle Billing** (sandbox) adapters, following their official SDKs' formats; a labelled test provider for development and E2E. Signed webhooks (HMAC, Paddle timestamp window and secret rotation), idempotent processing, and payments checked against our own checkout session (amount, currency, provider, test mode) before anything is granted.
+- Licenses: unique verifiable codes (`MOOD-XXXX-…`, 80 random bits), terms version on every license, draft plain-language terms per license type, `LICENSE.txt` with the buyer's name and code in every downloaded ZIP.
+- `apps/storefront`: one app for all brands (brand from host, themed from brand config); customer sign-up/sign-in with opt-in marketing consent; product pages with license choice; checkout; library with signed, rate-limited downloads (30/h, 150/day); order history; license certificate page; public license verification page + `GET /api/v1/licenses/verify`; customer data export; webhooks at `/api/webhooks/:provider`; Paddle.js checkout page.
+- Admin: Product catalog (create, price, publish, archive, collections), Orders (refund request → owner approval → provider refund), Customers, Licenses (search, revoke), Revenue (net of tax, fees and refunds; live orders only) with provider status and webhook log.
+- Safety switches: live credentials refused unless `COMMERCE_LIVE_PAYMENTS=enabled`; test provider refused when `DEPLOY_ENV=production`.
+- docs/PAYMENTS_SETUP.md: step-by-step test-mode setup for both providers.
+- Tests: 268 unit/integration/browser (+3 S3 tests needing moto) and 23 E2E (18 admin, 5 storefront).
+
+### Changed
+- Admin section placeholders now start at Phase 4; `/orders`, `/catalog`, `/customers`, `/licenses`, `/revenue` are real pages.
+- `pnpm e2e` builds and tests both apps.
+- `.env.example`: `STORAGE_FS_ROOT` must be absolute so the admin, storefront and worker share files.
+
+### Not yet done
+- No purchase through a real Lemon Squeezy or Paddle sandbox: the accounts don't exist yet.
+- Moved to Phase 4: catalog/metadata agent, Lottie export, stored sound library.
+- Customer account deletion (export exists); rate limit on the public license-verification endpoint.
+- Live AI production test: still waiting for Anthropic API credits.
+
 ## [0.2.0] — 2026-11-24 — Phase 2: Production engine
 
 ### Added

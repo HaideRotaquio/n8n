@@ -33,6 +33,9 @@ export default defineConfig({
       AUTH_RATE_LIMIT: "off",
       // Explicit, labelled stand-in for the AI provider so the AI flow is tested without an API key.
       DAOS_AI_PROVIDER: "fixture",
+      // Labelled test payment provider (refunds complete at once, no money moves).
+      COMMERCE_PROVIDER: "test",
+      COMMERCE_TEST_SECRET: "e2e-commerce-test-secret-0123456789",
     },
   },
 });

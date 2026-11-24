@@ -1,6 +1,6 @@
 # API documentation
 
-Base URL: the admin app origin (dev: `http://localhost:3100`). JSON in, JSON out.
+Two apps serve HTTP: the **admin** (dev `http://localhost:3100`, staff only) and the **storefront** (one deployment, brand chosen by host, dev `http://moodicons.localhost:3200`). JSON in, JSON out. Sections below are admin endpoints unless marked *storefront*.
 
 ## Authentication
 
@@ -51,6 +51,40 @@ Unknown fields (e.g. `slug`, `layout`) → 400. Domains already used by another 
 
 ### `GET /api/storage/download?key&exp&fn&sig`
 Only active with the local `fs` storage driver. Serves a file if the HMAC signature is valid and unexpired (60–3600 s). With R2/S3, clients use presigned URLs from the store directly.
+
+## Storefront endpoints (Phase 3)
+
+The brand always comes from the request host (`brand_domain`); unknown hosts get 404. Sessions are per host, so a sign-in at one brand never carries over to another. Customer sign-up is open (`POST /api/auth/sign-up/email`, 12-character minimum, 5 attempts/min).
+
+### `POST /api/webhooks/:provider` (*storefront*)
+`:provider` = `lemonsqueezy` | `paddle` (| `test` locally). One endpoint serves every brand: the order's brand comes from our own checkout session, which the provider echoes back as custom data (`checkout_id`).
+
+| Response | When |
+|---|---|
+| `200 {"ok":true,"outcome":"fulfilled"}` | Paid event matched our checkout: order, license and entitlement created |
+| `200 {"ok":true,"outcome":"duplicate"}` | Event already processed (idempotent replay) |
+| `200 {"ok":false,"outcome":"rejected","error":…}` | Signature valid but the payment doesn't match our checkout (amount, currency, provider, test mode). Nothing granted; visible in admin → Revenue → Recent webhooks |
+| `200 {"ok":true,"outcome":"refund_applied" \| "refund_unchanged"}` | Refund recorded (full refund revokes the license) |
+| `401 {"outcome":"bad_signature"}` | Signature or timestamp invalid. Nothing stored |
+| `404` | Provider not configured on this server |
+| `500` | Unexpected error; the provider retries |
+
+Signatures: Lemon Squeezy `X-Signature` = hex HMAC-SHA256(raw body). Paddle `Paddle-Signature: ts=…;h1=…` = HMAC-SHA256(`ts:raw body`), 60-second tolerance, several `h1` accepted during secret rotation.
+
+### `POST /api/downloads` (*storefront*, signed-in customer)
+Form fields `entitlementId`, `assetId`. Checks the entitlement is the caller's and not revoked, the asset belongs to the product, a reviewer-approved exported version exists, and limits (30/hour, 150/day per customer). Responds `303` to a 5-minute signed URL for a ZIP whose `LICENSE.txt` carries the buyer's license; on refusal `303 /account?error=not_entitled|not_in_product|not_ready|rate_limited`. Cross-site `Origin` → 403.
+
+### `GET /api/v1/licenses/verify?code=MOOD-XXXX-XXXX-XXXX-XXXX` (*storefront*, public)
+```json
+{ "valid": true, "status": "active", "brand": "Moodicons", "product": "Beating Heart", "licenseType": "commercial", "termsVersion": "2026-11-draft-1", "issuedAt": "2026-11-24T…", "licensee": "A. L." }
+```
+`status` is `active`, `revoked` or `not_found`; malformed codes → `400 {"status":"invalid_format"}`. Look-alike characters (O/0, I/L/1) are normalized. Only the licensee's initials are returned. CORS-open so customers' clients can check a code.
+
+### `GET /account/data` (*storefront*, signed-in customer)
+Everything held about the customer for that brand (account, orders, licenses, downloads) as a JSON attachment — the data-access request required by GDPR and the Philippine Data Privacy Act.
+
+### `GET /api/storage/download` (*storefront*)
+Same signed-URL route as the admin's, for the `fs` driver.
 
 ## Versioning
 

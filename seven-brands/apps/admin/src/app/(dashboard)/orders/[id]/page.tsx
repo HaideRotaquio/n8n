@@ -72,6 +72,16 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
               </div>
             </Card>
           )}
+          {open?.status === "requested" && !can(staff.grants, "order.refund", o.brandId) && (
+            <Card title="Refund requested">
+              <p className="text-sm">{money(open.amountCents, o.currency)} — waiting for an owner&apos;s approval. Nothing has been refunded yet.</p>
+            </Card>
+          )}
+          {open?.status === "submitted" && (
+            <Card title="Refund sent">
+              <p className="text-sm">Sent to the payment provider. The order updates when they confirm it.</p>
+            </Card>
+          )}
           {!open && remaining > 0 && can(staff.grants, "customer.write", o.brandId) && (
             <Card title="Request a refund">
               <ActionForm action={requestRefundAction.bind(null, o.id)} submit="Request refund">

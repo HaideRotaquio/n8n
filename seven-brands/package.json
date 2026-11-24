@@ -15,7 +15,8 @@
     "db:migrate": "pnpm --filter @sb/db migrate",
     "db:seed": "pnpm --filter @sb/db seed",
     "create-owner": "pnpm --filter @sb/auth create-owner",
-    "e2e": "pnpm --filter @sb/admin build && pnpm --filter @sb/admin e2e"
+    "e2e": "pnpm --filter @sb/admin build && pnpm --filter @sb/admin e2e && pnpm --filter @sb/storefront build && pnpm --filter @sb/storefront e2e",
+    "dev:store": "pnpm --filter @sb/storefront dev"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
