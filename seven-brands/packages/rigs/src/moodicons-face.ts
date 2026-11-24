@@ -6,7 +6,7 @@ import { finalize, heartPath, SPRING_SNAPPY, SPRING_SOFT, track } from "./util";
  * Geometry lives on a 64×64 grid with a 2.5 px outline, matching the Moodicons style guide.
  */
 
-export const FACE_EXPRESSIONS = ["happy", "laughing", "love", "sad", "crying", "angry", "surprised", "wink", "sleepy"] as const;
+export const FACE_EXPRESSIONS = ["happy", "laughing", "love", "sad", "crying", "angry", "surprised", "wink", "sleepy", "cool", "thinking", "party", "shy", "nervous", "kiss"] as const;
 export type FaceExpression = (typeof FACE_EXPRESSIONS)[number];
 
 export const FACE_PALETTES = {
@@ -27,6 +27,12 @@ const LABELS: Record<FaceExpression, { name: string; label: string; category: st
   surprised: { name: "Surprised Face", label: "Surprised face popping with open mouth", category: "surprise", tags: ["wow", "shock", "surprise"] },
   wink: { name: "Winking Face", label: "Smiling face winking", category: "reactions", tags: ["wink", "flirt", "playful"] },
   sleepy: { name: "Sleepy Face", label: "Sleepy face swaying with floating Z", category: "everyday", tags: ["sleep", "tired", "zzz"] },
+  cool: { name: "Cool Face", label: "Smirking face nodding in sunglasses", category: "reactions", tags: ["cool", "sunglasses", "chill"] },
+  thinking: { name: "Thinking Face", label: "Face looking up while thought bubbles appear", category: "everyday", tags: ["think", "hmm", "idea"] },
+  party: { name: "Party Face", label: "Party face in a hat with falling confetti", category: "celebration", tags: ["party", "birthday", "celebrate"] },
+  shy: { name: "Shy Face", label: "Shy face looking down with glowing blush", category: "love", tags: ["shy", "blush", "cute"] },
+  nervous: { name: "Nervous Face", label: "Nervous face with darting eyes and a sweat drop", category: "everyday", tags: ["nervous", "awkward", "sweat"] },
+  kiss: { name: "Kissing Face", label: "Face blowing a kiss with a floating heart", category: "love", tags: ["kiss", "love", "mwah"] },
 };
 
 const ink = { token: "ink" } as const;
@@ -54,6 +60,28 @@ function eyes(e: FaceExpression): Layer[] {
       return [stroke("eye-l", "M17 28 Q21.5 23 26 28"), { ...dot("eye-r", 42, 27, 3.5), origin: [42, 27] }];
     case "sleepy":
       return [stroke("eye-l", "M17 29 Q21.5 32 26 29"), stroke("eye-r", "M38 29 Q42.5 32 47 29")];
+    case "cool":
+      return [
+        {
+          id: "glasses",
+          kind: "group",
+          children: [
+            { id: "lens", kind: "shape", shape: { type: "path", d: "M13 23 H29 Q29 33 21.5 33 Q13 33 13 23 Z M35 23 H51 Q51 33 43.5 33 Q35 33 35 23 Z" }, fill: ink },
+            stroke("bridge", "M29 24.5 H35", 2.5),
+            { id: "shine", kind: "shape", shape: { type: "path", d: "M16.5 25.5 L19.5 25.5 M38.5 25.5 L41.5 25.5" }, fill: "none", stroke: { token: "blush" }, strokeWidth: 1.8, lineCap: "round" },
+          ],
+        },
+      ];
+    case "thinking":
+      return [dot("eye-l", 24, 25, 3), dot("eye-r", 44, 25, 3), stroke("brow-r", "M38 18 Q43 15 48 18", 2.5)];
+    case "party":
+      return [stroke("eye-l", "M17 29 Q21.5 23 26 29"), stroke("eye-r", "M38 29 Q42.5 23 47 29")];
+    case "shy":
+      return [stroke("eye-l", "M17 30 Q21.5 33.5 26 30"), stroke("eye-r", "M38 30 Q42.5 33.5 47 30")];
+    case "nervous":
+      return [dot("eye-l", 22, 28, 3.6), dot("eye-r", 42, 28, 3.6)];
+    case "kiss":
+      return [stroke("eye-l", "M17 28 Q21.5 22 26 28"), stroke("eye-r", "M38 28 Q42.5 22 47 28")];
   }
 }
 
@@ -77,6 +105,21 @@ function mouth(e: FaceExpression): Layer[] {
       return [{ id: "mouth", kind: "shape", shape: { type: "ellipse", cx: 32, cy: 44, rx: 5, ry: 6.5 }, fill: ink, origin: [32, 44] }];
     case "sleepy":
       return [{ id: "mouth", kind: "shape", shape: { type: "ellipse", cx: 32, cy: 44, rx: 3, ry: 2.5 }, fill: ink }];
+    case "cool":
+      return [stroke("mouth", "M23 43 Q33 47 42 39")];
+    case "thinking":
+      return [stroke("mouth", "M25 45 L38 42")];
+    case "party":
+      return [
+        { id: "mouth", kind: "shape", shape: { type: "path", d: "M19 37 Q32 55 45 37 Z" }, fill: ink, stroke: ink, strokeWidth: 2, lineJoin: "round" },
+        { id: "tongue", kind: "shape", shape: { type: "path", d: "M26 45 Q32 50 38 45 Q32 42 26 45 Z" }, fill: { token: "accent" } },
+      ];
+    case "shy":
+      return [stroke("mouth", "M26 43 Q29 40.5 32 43 Q35 45.5 38 43", 2.5)];
+    case "nervous":
+      return [stroke("mouth", "M21 44 L25.5 41 L30 44 L34.5 41 L39 44 L43.5 41", 2.5)];
+    case "kiss":
+      return [stroke("mouth", "M30 38 Q36.5 40.5 31.5 43 Q36.5 45.5 30 48", 2.8)];
   }
 }
 
@@ -97,6 +140,30 @@ function extras(e: FaceExpression): Layer[] {
       return [{ id: "vein", kind: "shape", shape: { type: "path", d: "M47 9 L50 12 M53 9 L50 12 M47 15 L50 12 M53 15 L50 12" }, fill: "none", stroke: { token: "fire" }, strokeWidth: 2.2, lineCap: "round" }];
     case "sleepy":
       return [{ id: "zzz", kind: "shape", shape: { type: "polyline", points: "47 8 54 8 47 15 54 15" }, fill: "none", stroke: ink, strokeWidth: 2.2, lineCap: "round", lineJoin: "round", origin: [50.5, 11.5] }];
+    case "thinking":
+      return [
+        { id: "bubble-1", kind: "shape", shape: { type: "circle", cx: 55, cy: 14.5, r: 1.8 }, fill: { token: "accent" } },
+        { id: "bubble-2", kind: "shape", shape: { type: "circle", cx: 59, cy: 7.5, r: 2.6 }, fill: { token: "accent" } },
+      ];
+    case "party":
+      return [
+        { id: "hat", kind: "shape", shape: { type: "polygon", points: "10.5 19.5 31.5 9.5 14 1" }, fill: { token: "accent" }, stroke: ink, strokeWidth: 2, lineJoin: "round" },
+        { id: "confetti-1", kind: "shape", shape: { type: "rect", x: 46, y: 5, width: 3.5, height: 3.5, rx: 0.8 }, fill: { token: "accent" } },
+        { id: "confetti-2", kind: "shape", shape: { type: "circle", cx: 56, cy: 9, r: 2 }, fill: { token: "tear" } },
+        { id: "confetti-3", kind: "shape", shape: { type: "rect", x: 52, y: 1.5, width: 3, height: 3, rx: 0.8 }, fill: { token: "blush" } },
+      ];
+    case "shy":
+      return [
+        { id: "blush-l", kind: "shape", shape: { type: "ellipse", cx: 15.5, cy: 37.5, rx: 5.5, ry: 3.2 }, fill: { token: "blush" }, opacity: 0.8 },
+        { id: "blush-r", kind: "shape", shape: { type: "ellipse", cx: 48.5, cy: 37.5, rx: 5.5, ry: 3.2 }, fill: { token: "blush" }, opacity: 0.8 },
+      ];
+    case "nervous":
+      return [{ id: "sweat", kind: "shape", shape: { type: "path", d: "M52 14 Q48.5 20 52 22.5 Q55.5 20 52 14 Z" }, fill: { token: "tear" } }];
+    case "kiss":
+      return [
+        ...blush,
+        { id: "kiss-heart", kind: "shape", shape: { type: "path", d: heartPath(50, 34, 10) }, fill: { token: "accent" }, origin: [50, 34] },
+      ];
     default:
       return [];
   }
@@ -204,6 +271,83 @@ function motion(e: FaceExpression): MotionSpec {
         sounds: [{ id: "snore", sound: "synth:whoosh", marker: "snore", gain: 0.35, params: { pitch: 0.5, decay: 2 } }],
         reducedMotionFrame: 900,
       };
+    case "cool":
+      return {
+        duration: 1600,
+        markers: [{ id: "nod", at: 300 }],
+        tracks: [
+          track("face", "rotate", [[0, 0, "easeInOut"], [300, -5, "easeInOut"], [650, 2, "easeInOut"], [900, 0], [1600, 0]]),
+          track("glasses", "translateY", [[0, 0, "easeOut"], [300, 2.5, "easeInOut"], [700, 0], [1600, 0]]),
+        ],
+        sounds: [{ id: "nod", sound: "synth:click", marker: "nod", gain: 0.6, params: { pitch: 0.7 } }],
+        reducedMotionFrame: 0,
+      };
+    case "thinking":
+      return {
+        duration: 1800,
+        markers: [{ id: "idea", at: 300 }],
+        tracks: [
+          track("bubble-1", "opacity", [[0, 0, "easeOut"], [300, 1], [1300, 1, "easeIn"], [1600, 0], [1800, 0]]),
+          track("bubble-2", "opacity", [[0, 0], [500, 0, "easeOut"], [800, 1], [1300, 1, "easeIn"], [1600, 0], [1800, 0]]),
+          track("face", "rotate", [[0, 0, "easeInOut"], [900, 3, "easeInOut"], [1800, 0]]),
+        ],
+        sounds: [{ id: "idea", sound: "synth:pluck", marker: "idea", gain: 0.5, params: { pitch: 1.2, decay: 0.6 } }],
+        reducedMotionFrame: 900,
+      };
+    case "party":
+      return {
+        duration: 1400,
+        markers: [{ id: "toot", at: 0 }],
+        tracks: [
+          track("face", "translateY", [[0, 0, "easeOut"], [200, -3, "easeIn"], [400, 0], [600, -2, "easeIn"], [800, 0], [1400, 0]]),
+          track("confetti-1", "translateY", [[0, 0, "easeIn"], [1200, 22], [1400, 22]]),
+          track("confetti-1", "opacity", [[0, 0, "easeOut"], [150, 1], [900, 1, "easeIn"], [1200, 0], [1400, 0]]),
+          track("confetti-2", "translateY", [[0, 0, "easeIn"], [1100, 18], [1400, 18]]),
+          track("confetti-2", "opacity", [[0, 0, "easeOut"], [150, 1], [800, 1, "easeIn"], [1100, 0], [1400, 0]]),
+          track("confetti-3", "translateY", [[0, 0, "easeIn"], [1300, 26], [1400, 26]]),
+          track("confetti-3", "opacity", [[0, 0, "easeOut"], [150, 1], [1000, 1, "easeIn"], [1300, 0], [1400, 0]]),
+        ],
+        sounds: [{ id: "toot", sound: "synth:chime", marker: "toot", gain: 0.6, params: { pitch: 1.2 } }],
+        reducedMotionFrame: 300,
+      };
+    case "shy":
+      return {
+        duration: 2000,
+        markers: [{ id: "blush", at: 500 }],
+        tracks: [
+          track("face", "rotate", [[0, 0, "easeInOut"], [700, -6, "easeInOut"], [1400, -6, "easeInOut"], [2000, 0]]),
+          track("blush-l", "opacity", [[0, 0.5, "easeInOut"], [700, 0.95, "easeInOut"], [1400, 0.95, "easeInOut"], [2000, 0.5]]),
+          track("blush-r", "opacity", [[0, 0.5, "easeInOut"], [700, 0.95, "easeInOut"], [1400, 0.95, "easeInOut"], [2000, 0.5]]),
+        ],
+        sounds: [{ id: "blush", sound: "synth:chime", marker: "blush", gain: 0.35, params: { pitch: 1.5, decay: 0.7 } }],
+        reducedMotionFrame: 700,
+      };
+    case "nervous":
+      return {
+        duration: 1600,
+        markers: [{ id: "gulp", at: 800 }],
+        tracks: [
+          track("eye-l", "translateX", [[0, 0, "easeInOut"], [200, -2.5], [500, -2.5, "easeInOut"], [700, 2.5], [1000, 2.5, "easeInOut"], [1200, 0], [1600, 0]]),
+          track("eye-r", "translateX", [[0, 0, "easeInOut"], [200, -2.5], [500, -2.5, "easeInOut"], [700, 2.5], [1000, 2.5, "easeInOut"], [1200, 0], [1600, 0]]),
+          track("sweat", "translateY", [[0, 0], [300, 0, "easeIn"], [1300, 10], [1600, 10]]),
+          track("sweat", "opacity", [[0, 0, "easeOut"], [300, 1], [1100, 1, "easeIn"], [1300, 0], [1600, 0]]),
+        ],
+        sounds: [{ id: "gulp", sound: "synth:pop", marker: "gulp", gain: 0.45, params: { pitch: 0.8, decay: 0.5 } }],
+        reducedMotionFrame: 600,
+      };
+    case "kiss":
+      return {
+        duration: 1600,
+        markers: [{ id: "mwah", at: 200 }],
+        tracks: [
+          track("face", "rotate", [[0, 0, "easeOut"], [200, -4, "easeInOut"], [600, 0], [1600, 0]]),
+          track("kiss-heart", "translateY", [[0, 0], [200, 0, "easeOut"], [1300, -20], [1600, -20]]),
+          track("kiss-heart", "translateX", [[0, 0], [200, 0, "easeOut"], [1300, 4], [1600, 4]]),
+          track("kiss-heart", "opacity", [[0, 0], [200, 0, "easeOut"], [400, 1], [1000, 1, "easeIn"], [1300, 0], [1600, 0]]),
+        ],
+        sounds: [{ id: "mwah", sound: "synth:pop", marker: "mwah", gain: 0.7, params: { pitch: 1.25 } }],
+        reducedMotionFrame: 500,
+      };
   }
 }
 
@@ -221,12 +365,12 @@ export function buildFace({ expression, palette = "classic" }: FaceRigParams): A
     origin: [32, 58],
     children: [
       { id: "head", kind: "shape", shape: { type: "circle", cx: 32, cy: 32, r: 27 }, fill: { token: "face" }, stroke: ink, strokeWidth: 2.5 },
-      ...extras(expression).filter((l) => l.id.startsWith("blush")),
+      ...extras(expression).filter((l) => l.id.startsWith("blush") || l.id === "hat"),
       ...eyes(expression),
       ...mouth(expression),
     ],
   };
-  const floating = extras(expression).filter((l) => !l.id.startsWith("blush"));
+  const floating = extras(expression).filter((l) => !l.id.startsWith("blush") && l.id !== "hat");
   // Face-level rotations pivot at the chin; scale pivots at the centre.
   if (m.tracks.some((t) => t.target === "face" && (t.property === "scale" || t.property === "scaleY"))) faceGroup.origin = [32, 46];
   const slug = palette === "classic" ? `face-${expression}` : `face-${expression}-${palette}`;

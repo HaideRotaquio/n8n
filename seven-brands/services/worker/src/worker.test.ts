@@ -34,13 +34,13 @@ describe("rig jobs", () => {
     await drain({ db: h.db, storage }, quiet);
     const done = (await getJob(h.db, job.id))!.job;
     expect(done.status).toBe("succeeded");
-    expect((done.result as any).created).toHaveLength(9);
+    expect((done.result as any).created).toHaveLength(15);
     expect((done.result as any).created.every((c: any) => c.qaScore === 100)).toBe(true);
     expect(Number(done.costUsd)).toBe(0);
 
     const again = await enqueueJob(h.db, ctx, { brandId: mood.id, kind: "rig", brief: { rig: "moodicons-face@1" } });
     await drain({ db: h.db, storage }, quiet);
-    expect(((await getJob(h.db, again.id))!.job.result as any).unchanged).toBe(9);
+    expect(((await getJob(h.db, again.id))!.job.result as any).unchanged).toBe(15);
   });
 
   it("refuses a rig from another brand, without retrying", async () => {

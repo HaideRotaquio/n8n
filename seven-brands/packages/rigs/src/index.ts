@@ -1,8 +1,10 @@
 import type { AssetDefinition } from "@sb/asset";
 import { buildFace, FACE_EXPRESSIONS, FACE_PALETTES, type FacePalette } from "./moodicons-face";
+import { buildSymbol, SYMBOL_PALETTES, SYMBOLS, type SymbolPalette } from "./moodicons-symbols";
 import { buildGlyph, GLYPH_PALETTES, GLYPHS, type GlyphPalette } from "./sonicglyphs";
 
 export * from "./moodicons-face";
+export * from "./moodicons-symbols";
 export * from "./sonicglyphs";
 export { heartPath } from "./util";
 
@@ -24,6 +26,14 @@ export const RIGS: Record<string, RigInfo> = {
     variants: [...FACE_EXPRESSIONS],
     palettes: Object.keys(FACE_PALETTES),
     build: (v, p) => buildFace({ expression: v as (typeof FACE_EXPRESSIONS)[number], palette: (p ?? "classic") as FacePalette }),
+  },
+  "moodicons-symbols@1": {
+    id: "moodicons-symbols@1",
+    brand: "moodicons",
+    label: "Moodicons reaction stickers",
+    variants: [...SYMBOLS],
+    palettes: Object.keys(SYMBOL_PALETTES),
+    build: (v, p) => buildSymbol({ symbol: v as (typeof SYMBOLS)[number], palette: (p ?? "classic") as SymbolPalette }),
   },
   "sonicglyphs-line@1": {
     id: "sonicglyphs-line@1",

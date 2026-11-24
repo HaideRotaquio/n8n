@@ -9,7 +9,7 @@ test("rig job produces SonicGlyphs assets that pass QA", async ({ page }) => {
   await page.goto("/production");
   await page.getByLabel("Brand").selectOption({ label: "SonicGlyphs" });
   await page.getByRole("button", { name: "Queue job" }).click();
-  await expect(page.getByText(/Queued 8 assets/)).toBeVisible();
+  await expect(page.getByText(/Queued 14 assets/)).toBeVisible();
   await page.getByRole("link", { name: "View job" }).click();
   await page.waitForURL(/\/production\/job_/);
   const jobUrl = page.url();

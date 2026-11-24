@@ -11,15 +11,19 @@ describe("rigs", () => {
     expect(r.warnings).toEqual([]);
     expect(r.score).toBe(100);
   });
+  it("has launch volume: ~60 Moodicons and ~40 SonicGlyphs across palettes", () => {
+    expect(all.filter((x) => x.ad.brand === "moodicons").length).toBeGreaterThanOrEqual(60);
+    expect(all.filter((x) => x.ad.brand === "sonicglyphs").length).toBeGreaterThanOrEqual(40);
+  });
   it("produces unique slugs and the right brands", () => {
     const slugs = all.map((x) => `${x.ad.brand}/${x.ad.slug}`);
     expect(new Set(slugs).size).toBe(slugs.length);
     expect(all.filter((x) => x.rig.startsWith("moodicons")).every((x) => x.ad.brand === "moodicons")).toBe(true);
   });
-  it("starter set has 9 Moodicons and 8 SonicGlyphs, each with sound", () => {
+  it("starter set covers every rig variant once, each with sound", () => {
     const set = starterSet();
-    expect(set.filter((a) => a.brand === "moodicons")).toHaveLength(9);
-    expect(set.filter((a) => a.brand === "sonicglyphs")).toHaveLength(8);
+    expect(set.filter((a) => a.brand === "moodicons")).toHaveLength(23); // 15 faces + 8 stickers
+    expect(set.filter((a) => a.brand === "sonicglyphs")).toHaveLength(14);
     expect(set.every((a) => a.sounds.length > 0 && a.provenance.method === "rig")).toBe(true);
   });
 });

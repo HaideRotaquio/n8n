@@ -6,7 +6,7 @@ import { finalize, SPRING_SNAPPY, SPRING_SOFT, track } from "./util";
  * each with motion and sound designed together (cues sit on the visual impact frames).
  */
 
-export const GLYPHS = ["speaker", "music-note", "headphones", "microphone", "bell", "vinyl", "equalizer", "notification"] as const;
+export const GLYPHS = ["speaker", "music-note", "headphones", "microphone", "bell", "vinyl", "equalizer", "notification", "play", "waveform", "radio", "drum", "cassette", "mute"] as const;
 export type Glyph = (typeof GLYPHS)[number];
 
 export const GLYPH_PALETTES = {
@@ -196,6 +196,125 @@ function spec(g: Glyph): GlyphSpec {
           { id: "tick", sound: "synth:click", marker: "off", gain: 0.5 },
         ],
         reducedMotionFrame: 300,
+      };
+    case "play":
+      return {
+        name: "Play Button", label: "Play button pressed with a ripple", category: "controls", tags: ["play", "start", "media"],
+        layers: [
+          { id: "ring", kind: "shape", shape: { type: "circle", cx: 32, cy: 32, r: 25 }, fill: "none", stroke: accent, strokeWidth: sw, origin: [32, 32] },
+          { id: "button", kind: "group", origin: [32, 32], children: [
+            { id: "disc", kind: "shape", shape: { type: "circle", cx: 32, cy: 32, r: 18 }, fill: { token: "fill" }, stroke: line, strokeWidth: sw },
+            { id: "triangle", kind: "shape", shape: { type: "polygon", points: "27 23 42 32 27 41" }, fill: line, stroke: line, strokeWidth: 2, lineJoin: "round" },
+          ] },
+        ],
+        duration: 1400,
+        markers: [{ id: "press", at: 150 }],
+        tracks: [
+          track("button", "scale", [[0, 1, "easeIn"], [150, 0.88, "easeOut"], [400, 1], [1400, 1]]),
+          track("ring", "scale", [[0, 0.72], [150, 0.72, "easeOut"], [900, 1.05], [1400, 1.05]]),
+          track("ring", "opacity", [[0, 0], [150, 0, "easeOut"], [250, 1], [900, 0, "easeOut"], [1400, 0]]),
+        ],
+        sounds: [{ id: "press", sound: "synth:click", marker: "press", gain: 0.7 }],
+        reducedMotionFrame: 0,
+      };
+    case "waveform":
+      return {
+        name: "Live Waveform", label: "Audio waveform rippling", category: "visualizers", tags: ["waveform", "audio", "voice"],
+        layers: [0, 1, 2, 3, 4, 5, 6].map((i): Layer => {
+          const h = [10, 22, 34, 44, 34, 22, 10][i]!;
+          const x = 11 + i * 7;
+          return { id: `line-${i + 1}`, kind: "shape", shape: { type: "line", x1: x, y1: 32 - h / 2, x2: x, y2: 32 + h / 2 }, fill: "none", stroke: i === 3 ? accent : line, strokeWidth: 3.5, lineCap: "round", origin: [x, 32] };
+        }),
+        duration: 1400,
+        markers: [{ id: "pulse", at: 0 }],
+        tracks: [0, 1, 2, 3, 4, 5, 6].map((i) => {
+          const d = Math.abs(3 - i) * 100;
+          return track(`line-${i + 1}`, "scaleY", [[0, 1], [d, 1, "easeOut"], [d + 250, 0.45, "easeInOut"], [d + 500, 1], [1400, 1]]);
+        }),
+        sounds: [{ id: "pulse", sound: "synth:pluck", marker: "pulse", gain: 0.5, params: { pitch: 0.9, decay: 0.7 } }],
+        reducedMotionFrame: 0,
+      };
+    case "radio":
+      return {
+        name: "Retro Radio", label: "Retro radio with its tuning dial turning", category: "audio-gear", tags: ["radio", "retro", "broadcast"],
+        layers: [
+          path("antenna", "M24 20 L44 8"),
+          { id: "antenna-tip", kind: "shape", shape: { type: "circle", cx: 44, cy: 8, r: 2.5 }, fill: accent, origin: [44, 8] },
+          { id: "body", kind: "shape", shape: { type: "rect", x: 8, y: 20, width: 48, height: 32, rx: 6 }, fill: { token: "fill" }, stroke: line, strokeWidth: sw },
+          path("grille", "M15 30 H33 M15 36 H33 M15 42 H33", { strokeWidth: 2 }),
+          { id: "dial", kind: "group", origin: [45, 36], children: [
+            { id: "knob", kind: "shape", shape: { type: "circle", cx: 45, cy: 36, r: 6.5 }, fill: "none", stroke: line, strokeWidth: sw },
+            path("pointer", "M45 36 L45 31", { stroke: accent }),
+          ] },
+        ],
+        duration: 2400,
+        markers: [{ id: "tune", at: 1200 }],
+        tracks: [
+          track("dial", "rotate", [[0, 0, "easeInOut"], [1200, 120, "easeInOut"], [2400, 0]]),
+          track("antenna-tip", "scale", [[0, 1], [1100, 1, "easeOut"], [1250, 1.5, "easeInOut"], [1500, 1], [2400, 1]]),
+        ],
+        sounds: [{ id: "tune", sound: "synth:notify", marker: "tune", gain: 0.4, params: { pitch: 0.8 } }],
+        reducedMotionFrame: 0,
+      };
+    case "drum":
+      return {
+        name: "Snare Drum", label: "Drumsticks hitting a snare drum", category: "instruments", tags: ["drum", "beat", "percussion"],
+        layers: [
+          { id: "shell", kind: "shape", shape: { type: "path", d: "M12 34 V48 Q32 58 52 48 V34" }, fill: { token: "fill" }, stroke: line, strokeWidth: sw, lineJoin: "round" },
+          { id: "head", kind: "group", origin: [32, 34], children: [
+            { id: "skin", kind: "shape", shape: { type: "ellipse", cx: 32, cy: 34, rx: 20, ry: 7 }, fill: { token: "fill" }, stroke: line, strokeWidth: sw },
+          ] },
+          { id: "stick-l", kind: "group", origin: [10, 12], children: [path("stick-l-line", "M10 12 L29 31", { stroke: accent, strokeWidth: 3 })] },
+          { id: "stick-r", kind: "group", origin: [54, 12], children: [path("stick-r-line", "M54 12 L36 31", { stroke: accent, strokeWidth: 3 })] },
+        ],
+        duration: 1000,
+        markers: [{ id: "hit-1", at: 200 }, { id: "hit-2", at: 600 }],
+        tracks: [
+          track("stick-l", "rotate", [[0, -18, "easeIn"], [200, 0, "easeOut"], [400, -18], [1000, -18]]),
+          track("stick-r", "rotate", [[0, 18], [400, 18, "easeIn"], [600, 0, "easeOut"], [800, 18], [1000, 18]]),
+          track("head", "scaleY", [[0, 1], [200, 0.8, "easeOut"], [320, 1], [600, 0.8, "easeOut"], [720, 1], [1000, 1]]),
+        ],
+        sounds: [
+          { id: "hit-1", sound: "synth:kick", marker: "hit-1", gain: 0.8, params: { pitch: 1.4 } },
+          { id: "hit-2", sound: "synth:shutter", marker: "hit-2", gain: 0.6 },
+        ],
+        reducedMotionFrame: 200,
+      };
+    case "cassette":
+      return {
+        name: "Cassette Tape", label: "Cassette tape with spinning reels", category: "audio-gear", tags: ["cassette", "tape", "mixtape"],
+        layers: [
+          { id: "case", kind: "shape", shape: { type: "rect", x: 6, y: 14, width: 52, height: 36, rx: 5 }, fill: { token: "fill" }, stroke: line, strokeWidth: sw },
+          path("window", "M18 24 H46 V36 H18 Z", { strokeWidth: 2 }),
+          path("ramp", "M16 50 L20 42 H44 L48 50", { strokeWidth: 2 }),
+          ...[24, 40].map((cx, i): Layer => ({
+            id: `reel-${i + 1}`, kind: "group", origin: [cx, 30], children: [
+              { id: `hub-${i + 1}`, kind: "shape", shape: { type: "circle", cx, cy: 30, r: 4 }, fill: "none", stroke: accent, strokeWidth: 2 },
+              path(`teeth-${i + 1}`, `M${cx} 26 V34 M${cx - 4} 30 H${cx + 4}`, { stroke: accent, strokeWidth: 1.6 }),
+            ],
+          })),
+        ],
+        duration: 2000,
+        markers: [{ id: "roll", at: 0 }],
+        tracks: [track("reel-1", "rotate", [[0, 0], [2000, 360]]), track("reel-2", "rotate", [[0, 0], [2000, 360]])],
+        sounds: [{ id: "roll", sound: "synth:click", marker: "roll", gain: 0.4, params: { pitch: 0.6 } }],
+        reducedMotionFrame: 0,
+      };
+    case "mute":
+      return {
+        name: "Mute Toggle", label: "Speaker muted with a blinking cross", category: "controls", tags: ["mute", "silent", "volume off"],
+        layers: [
+          { id: "body", kind: "group", origin: [20, 32], children: [path("box", "M10 25 H18 L29 16 V48 L18 39 H10 Z", { fill: { token: "fill" } })] },
+          { id: "cross", kind: "group", origin: [45, 32], children: [path("x", "M38 25 L52 39 M52 25 L38 39", { stroke: accent, strokeWidth: 3 })] },
+        ],
+        duration: 1400,
+        markers: [{ id: "off", at: 200 }],
+        tracks: [
+          track("cross", "scale", [[0, 0.6, "easeOut"], [200, 1.15, "easeInOut"], [400, 1], [1400, 0.6]]),
+          track("body", "translateX", [[0, 0], [200, 0, "easeOut"], [260, -1.5], [320, 1], [380, 0], [1400, 0]]),
+        ],
+        sounds: [{ id: "off", sound: "synth:click", marker: "off", gain: 0.6, params: { pitch: 0.5 } }],
+        reducedMotionFrame: 400,
       };
   }
 }
