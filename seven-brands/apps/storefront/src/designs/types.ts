@@ -2,6 +2,7 @@ import type { AssetDefinition } from "@sb/asset";
 import type { ReactNode } from "react";
 import type { PreviewAsset } from "@/components/live-preview";
 import type { HoverCue } from "@/components/sound";
+import type { ScrollItem } from "@/components/scroll-showcase";
 
 export interface CatalogItem {
   slug: string;
@@ -38,6 +39,8 @@ export interface HomeProps {
   freePack: CatalogItem | null;
   /** Hero showcase (first page load, unfiltered). */
   showcase: CatalogItem[];
+  /** Icons for the "scroll to play" strip. */
+  scrollDemo: ScrollItem[];
 }
 
 export interface ProductProps {

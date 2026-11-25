@@ -282,16 +282,20 @@ export interface ${name}Props {
   className?: string;
   /** Accessible label override. */
   label?: string;
+  /** Scroll-driven playback: "scrub" follows the scroll position, "in-view" plays when half visible. */
+  scroll?: "scrub" | "in-view";
+  /** With scroll="scrub": how many times the animation repeats while the icon crosses the screen. */
+  scrollLoops?: number;
 }
 
-export function ${name}({ autoplay = true, speed = 1, tokens, className, label }: ${name}Props) {
+export function ${name}({ autoplay = true, speed = 1, tokens, className, label, scroll, scrollLoops }: ${name}Props) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     if (ref.current && tokens) ref.current.setAttribute("tokens", JSON.stringify(tokens));
   }, [tokens]);
   return createElement(
     "daos-asset",
-    { ref, class: className, speed: String(speed), autoplay: autoplay ? "" : undefined, "aria-label": label },
+    { ref, class: className, speed: String(speed), autoplay: autoplay ? "" : undefined, "aria-label": label, scroll, "scroll-loops": scrollLoops ? String(scrollLoops) : undefined },
     createElement("script", {
       type: "application/json",
       dangerouslySetInnerHTML: { __html: JSON.stringify(definition).replace(/</g, "\\\\u003c") },
@@ -397,6 +401,11 @@ What each format can do:
 ${rows}
 
 Sound in browsers starts only after the visitor clicks or taps (autoplay rules).
+
+Scroll-driven playback (Web Component and React):
+  <daos-asset scroll="scrub">   the animation follows the page scroll (add scroll-loops="3" to repeat it)
+  <daos-asset scroll="in-view"> plays from the start when half the icon is visible
+  Once sound is turned on, scrubbing forward plays each sound as you pass it.
 Reduced motion: the vector and component formats show a still frame when the
 visitor's system asks for reduced motion.
 

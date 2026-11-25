@@ -2,6 +2,7 @@ import { renderAnimatedSvg, serialize, type AssetDefinition } from "@sb/asset";
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { LivePreview } from "@/components/live-preview";
+import { ScrollShowcase } from "@/components/scroll-showcase";
 import { HoverSound, SoundToggle } from "@/components/sound";
 import type { CatalogItem, Design, HomeProps, ProductProps, ShellProps } from "./types";
 
@@ -81,7 +82,7 @@ function Card({ item, i }: { item: CatalogItem; i: number }) {
   );
 }
 
-function Home({ tagline, description, items, categories, q, category, freePack, showcase }: HomeProps) {
+function Home({ tagline, description, items, categories, q, category, freePack, showcase, scrollDemo }: HomeProps) {
   const filtered = !!q || !!category;
   return (
     <div className="space-y-12">
@@ -108,6 +109,8 @@ function Home({ tagline, description, items, categories, q, category, freePack, 
           </ul>
         </section>
       )}
+
+      {!filtered && <ScrollShowcase items={scrollDemo} look="playful" />}
 
       <section id="shop" className="scroll-mt-6 space-y-5">
         <form method="get" className="flex flex-wrap items-center gap-2" role="search">

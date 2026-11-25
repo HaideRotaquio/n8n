@@ -26,6 +26,7 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
       category={category}
       freePack={all.find((i) => i.isFree) ?? null}
       showcase={showcase(all)}
+      scrollDemo={scrollDemo(all)}
     />
   );
 }
@@ -38,4 +39,12 @@ function showcase(all: Awaited<ReturnType<typeof catalogItems>>) {
   const out = [...picked.values()];
   for (const i of singles) if (out.length < 6 && !out.includes(i)) out.push(i);
   return out.slice(0, 6);
+}
+
+/** Four icons for the scroll strip, different from the hero's where the catalog allows. */
+function scrollDemo(all: Awaited<ReturnType<typeof catalogItems>>) {
+  const hero = new Set(showcase(all).map((i) => i.slug));
+  const pool = all.filter((i) => i.cover && !i.isFree && i.assetCount <= 4);
+  const picked = [...pool.filter((i) => !hero.has(i.slug)), ...pool.filter((i) => hero.has(i.slug))].slice(0, 4);
+  return picked.map((i) => ({ slug: i.slug, title: i.title, definition: i.cover! }));
 }

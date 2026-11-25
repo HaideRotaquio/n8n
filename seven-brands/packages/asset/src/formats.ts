@@ -10,8 +10,8 @@ export const FORMAT_CAPABILITIES: Record<ExportFormat, { animation: boolean; int
   webm: { animation: true, interactive: false, sound: true, note: "VP9 with alpha + Opus (stereo when the icon pans its sounds)" },
   lottie: { animation: true, interactive: false, sound: false, note: "Lottie JSON (60 fps, 512 px), checked against lottie-web; no sound or interactions in Lottie" },
   wav: { animation: false, interactive: false, sound: true, note: "Mixed sound track for one loop + cue sheet; stereo when sounds are panned" },
-  "web-component": { animation: true, interactive: true, sound: true, note: "<daos-asset> element; sound after user click, panned left/right with the motion" },
-  react: { animation: true, interactive: true, sound: true, note: "React wrapper around the Web Component" },
+  "web-component": { animation: true, interactive: true, sound: true, note: "<daos-asset> element; sound after user click, panned left/right; scroll=\"scrub\" or \"in-view\" playback" },
+  react: { animation: true, interactive: true, sound: true, note: "React wrapper around the Web Component (scroll and scrollLoops props)" },
   json: { animation: true, interactive: true, sound: true, note: "Asset Definition (for developers and apps)" },
 };
 

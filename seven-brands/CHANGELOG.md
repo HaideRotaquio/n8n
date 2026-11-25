@@ -2,7 +2,15 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
-## [0.4.3] — 2026-11-25 — Hover to hear
+## [0.4.4] — 2026-11-25 — Scroll-driven playback
+
+### Added
+- `<daos-asset scroll="scrub">`: the animation follows the page scroll (forwards and back), with `scroll-loops="N"` to repeat it across the crossing; `scroll="in-view"` plays from the start when half visible and pauses when it leaves. React files get `scroll` and `scrollLoops` props; package READMEs explain both.
+- With sound on, scrubbing forward plays each cue as it is passed (fast flings play only the last one; scrolling back is silent). Reduced-motion users keep the still frame.
+- Storefronts: a "Scroll to play" strip on both home pages (different icons from the hero) using the same player mode; help FAQ entry.
+- Tests: 5 player browser tests (progress math, scrub determinism, reduced motion, in-view, sound on scrub) and a storefront E2E.
+
+ — 2026-11-25 — Hover to hear
 
 ### Added
 - Storefront "Sound on/off" switch in the header (both designs), remembered per visitor. Off by default; the click on it unlocks audio as browsers require, and on later visits the first click or key press re-unlocks it.

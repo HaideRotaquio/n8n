@@ -126,4 +126,86 @@ describe("<daos-asset>", () => {
     expect(await centred.evaluate(() => (window as any).__starts.length)).toBeGreaterThanOrEqual(1);
     await centred.close();
   });
+
 });
+
+describe("scroll-driven playback", () => {
+  async function tall(def: unknown, attrs: string, opts: { reducedMotion?: boolean } = {}) {
+    const page = await browser.newPage({ viewport: { width: 800, height: 600 }, reducedMotion: opts.reducedMotion ? "reduce" : "no-preference" });
+    await page.setContent(
+      `<!doctype html><html><head><script>window.__starts=0;const o=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(...a){window.__starts++;return o.apply(this,a)}</script></head><body style="margin:0"><button id="b" style="position:fixed;top:0">sound</button><div style="height:900px"></div><daos-asset id="a" ${attrs} style="display:block;width:200px"><script type="application/json">${json(def)}</script></daos-asset><div style="height:1400px"></div><script>${bundle}</script></body></html>`,
+    );
+    await page.waitForFunction(() => document.getElementById("a")?.shadowRoot?.querySelector("svg"));
+    return page;
+  }
+  // The beating heart's animated layer: its transform is the visible state.
+  const state = (page: Page) => page.evaluate(() => document.getElementById("a")!.shadowRoot!.querySelector("[data-layer][transform]")?.getAttribute("transform") ?? "none");
+  const scroll = async (page: Page, y: number) => {
+    await page.evaluate((v) => window.scrollTo(0, v), y);
+    await page.waitForTimeout(120);
+  };
+
+  it("computes progress across the viewport", async () => {
+    const { scrollProgress } = await import("./scroll");
+    expect(scrollProgress({ top: 600, height: 200 }, 600)).toBe(0);
+    expect(scrollProgress({ top: -200, height: 200 }, 600)).toBe(1);
+    expect(scrollProgress({ top: 200, height: 200 }, 600)).toBe(0.5);
+    expect(scrollProgress({ top: 5000, height: 200 }, 600)).toBe(0);
+  });
+
+  it("scrub: the frame follows the scroll position, the same position gives the same frame", async () => {
+    const def = structuredClone(BEATING_HEART) as any;
+    const page = await tall(def, 'scroll="scrub"');
+    await scroll(page, 500);
+    const a = await state(page);
+    await scroll(page, 560);
+    const b = await state(page);
+    await page.waitForTimeout(400); // no autoplay: nothing changes without scrolling
+    expect(await state(page)).toBe(b);
+    await scroll(page, 500);
+    expect(await state(page)).toBe(a);
+    expect(a).not.toBe(b);
+    await page.close();
+  });
+
+  it("scrub respects reduced motion (still frame, unaffected by scrolling)", async () => {
+    const page = await tall(structuredClone(BEATING_HEART), 'scroll="scrub"', { reducedMotion: true });
+    const before = await state(page);
+    await scroll(page, 520);
+    expect(await state(page)).toBe(before);
+    await page.close();
+  });
+
+  it("in-view: still while off-screen, plays once scrolled into view", async () => {
+    const page = await tall(structuredClone(BEATING_HEART), 'scroll="in-view" autoplay');
+    const s1 = await state(page);
+    await page.waitForTimeout(300);
+    expect(await state(page)).toBe(s1);
+    await scroll(page, 700);
+    const seen = new Set<string>();
+    for (let i = 0; i < 6; i++) {
+      seen.add(await state(page));
+      await page.waitForTimeout(80);
+    }
+    expect(seen.size).toBeGreaterThan(1);
+    await page.close();
+  });
+
+  it("scrub plays a sound when scrolling forward past its cue, only after sound is turned on", async () => {
+    const def = structuredClone(BEATING_HEART) as any;
+    def.sounds = def.sounds.map((c: any) => ({ ...c, at: 400, marker: undefined, offset: undefined }));
+    const page = await tall(def, 'scroll="scrub"');
+    await scroll(page, 380);
+    await scroll(page, 760);
+    expect(await page.evaluate(() => (window as any).__starts)).toBe(0);
+    await page.evaluate(() => document.getElementById("b")!.addEventListener("click", () => (document.getElementById("a") as any).unmute()));
+    await page.click("#b");
+    await page.waitForTimeout(300);
+    await scroll(page, 380);
+    expect(await page.evaluate(() => (window as any).__starts)).toBe(0); // backwards: silent
+    await scroll(page, 760);
+    await expect.poll(() => page.evaluate(() => (window as any).__starts)).toBeGreaterThan(0);
+    await page.close();
+  });
+});
+

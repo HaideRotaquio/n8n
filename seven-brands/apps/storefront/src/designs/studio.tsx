@@ -1,6 +1,7 @@
 import { renderAnimatedSvg, serialize, type AssetDefinition } from "@sb/asset";
 import Link from "next/link";
 import { LivePreview } from "@/components/live-preview";
+import { ScrollShowcase } from "@/components/scroll-showcase";
 import { HoverSound, SoundToggle } from "@/components/sound";
 import { SignOutButton } from "@/components/sign-out-button";
 import type { CatalogItem, Design, HomeProps, ProductProps, ShellProps } from "./types";
@@ -85,7 +86,7 @@ function Module({ item, n }: { item: CatalogItem; n: number }) {
   );
 }
 
-function Home({ tagline, description, items, categories, q, category, freePack, showcase }: HomeProps) {
+function Home({ tagline, description, items, categories, q, category, freePack, showcase, scrollDemo }: HomeProps) {
   const filtered = !!q || !!category;
   return (
     <div className="space-y-12">
@@ -114,6 +115,8 @@ function Home({ tagline, description, items, categories, q, category, freePack, 
           </div>
         </section>
       )}
+
+      {!filtered && <ScrollShowcase items={scrollDemo} look="studio" />}
 
       <section id="library" className="scroll-mt-6 space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--color-border)] pb-4">

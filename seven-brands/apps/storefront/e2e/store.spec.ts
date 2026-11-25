@@ -158,6 +158,31 @@ test("hover to hear: silent until sound is switched on, then hovering an icon pl
   await expect(page.getByRole("button", { name: /Sound on/ })).toBeVisible(); // remembered
 });
 
+test("scroll to play: the strip's icons follow the scroll position", async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 700 });
+  await page.goto("/");
+  const strip = page.getByRole("region", { name: "Scroll to play them" });
+  await expect(strip).toBeVisible();
+  // Snapshot of every layer's transform in the strip (what is drawn right now).
+  const frame = () => strip.evaluate((el) => Array.from(el.querySelectorAll("svg [data-layer]"), (n) => n.getAttribute("transform") ?? "-").join("|"));
+  await strip.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(150); // let the scroll handler draw the frame for this position
+  const start = await page.evaluate(() => window.scrollY);
+  const a = await frame();
+  // Walk down in small steps: the icon must pass through several different frames (it beats, then rests).
+  const seen = new Set<string>([a]);
+  for (let i = 1; i <= 12; i++) {
+    await page.evaluate((y) => window.scrollTo(0, y), start + i * 30);
+    await page.waitForTimeout(60);
+    seen.add(await frame());
+  }
+  expect(seen.size).toBeGreaterThan(1);
+  // Back to where we started: exactly the same frame (scroll position, not time, decides).
+  await page.evaluate((y) => window.scrollTo(0, y), start);
+  await page.waitForTimeout(150);
+  expect(await frame()).toBe(a);
+});
+
 test("test checkout can be cancelled and unknown sessions are hidden", async ({ page }) => {
   await page.goto("/sign-in?next=/products/beating-heart");
   await page.getByLabel("Email").fill(BUYER.email);

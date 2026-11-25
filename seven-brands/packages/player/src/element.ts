@@ -1,3 +1,4 @@
+import { attachScroll, isScrollMode } from "./scroll";
 import { AssetPlayer } from "./index";
 import { isAssetDefinition, withDefaults } from "./validate-lite";
 
@@ -15,9 +16,11 @@ import { isAssetDefinition, withDefaults } from "./validate-lite";
  */
 export class DaosAssetElement extends HTMLElement {
   private player: AssetPlayer | null = null;
+  private detachScroll: (() => void) | null = null;
 
   static get observedAttributes() {
     return ["speed", "tokens"];
+    // `scroll` ("scrub" | "in-view") and `scroll-loops` are read once, when the element connects.
   }
 
   async connectedCallback() {
@@ -47,9 +50,13 @@ export class DaosAssetElement extends HTMLElement {
       muted: true,
       soundUrls: sounds ? safeJson(sounds) : undefined,
     });
+    const scroll = this.getAttribute("scroll");
+    if (isScrollMode(scroll)) this.detachScroll = attachScroll(this.player, this, scroll, { loops: Number(this.getAttribute("scroll-loops") ?? 1) || 1 });
   }
 
   disconnectedCallback() {
+    this.detachScroll?.();
+    this.detachScroll = null;
     this.player?.destroy();
     this.player = null;
   }

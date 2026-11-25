@@ -131,6 +131,44 @@ export class AssetPlayer {
     return this.playing;
   }
 
+  /** True when the visitor prefers reduced motion (and the player respects it). */
+  get reducedMotion() {
+    return this.reduced;
+  }
+
+  /** Length of one loop of the timeline, in ms. */
+  get duration() {
+    return this.ad.timeline.duration;
+  }
+
+  private scrubbedTo = 0;
+  /**
+   * Scroll scrubbing: shows the frame at `elapsedMs` (which may span several loops) and, when sound is on, plays the
+   * cues passed while moving forward. Big jumps (a fast fling) play only the last cue passed, so nothing piles up.
+   */
+  scrubTo(elapsedMs: number) {
+    if (this.playing) this.pause();
+    const d = this.ad.timeline.duration;
+    const e = Math.max(0, elapsedMs);
+    const t = e > 0 && e % d === 0 ? d : e % d;
+    const prev = this.scrubbedTo;
+    this.scrubbedTo = e;
+    this.elapsedAtAnchor = t;
+    this.render(t, e);
+    const ctx = this.audio;
+    if (this.opts.muted || !ctx || ctx.state !== "running" || e <= prev) return;
+    const crossed: string[] = [];
+    for (const cue of this.ad.sounds) {
+      const ct = cueTime(cue, this.ad.timeline);
+      for (let iter = Math.floor(prev / d); iter <= Math.floor(e / d); iter++) {
+        const at = iter * d + ct;
+        if (at > prev && at <= e) crossed.push(cue.id);
+      }
+    }
+    const toPlay = e - prev > d * 1.5 ? crossed.slice(-1) : crossed;
+    for (const id of toPlay) this.playBuffer(id, ctx.currentTime);
+  }
+
   get elapsed(): number {
     if (!this.playing) return this.elapsedAtAnchor;
     return this.elapsedAtAnchor + (performance.now() - this.anchorWall) * (this.opts.speed ?? 1);
@@ -315,3 +353,5 @@ export class AssetPlayer {
     }
   }
 }
+
+export { attachScroll, isScrollMode, scrollProgress, type ScrollMode } from "./scroll";
