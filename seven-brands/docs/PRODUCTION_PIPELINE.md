@@ -22,7 +22,7 @@ One motion evaluator (`packages/asset/src/motion.ts`) drives every output, so al
 
 | Method | How | Cost | Where |
 |---|---|---|---|
-| **Rig** | Parametric generators: Moodicons face (15 expressions × 4 palettes), Moodicons reaction stickers (8 × 2), SonicGlyphs line glyphs (14 × 3) | $0 | `packages/rigs` |
+| **Rig** | Parametric generators: Moodicons face (15 expressions × 4 palettes), Moodicons reaction stickers (8 × 2), Moodicons Bawal signs (6, PH public rules), SonicGlyphs line glyphs (14 × 3) | $0 | `packages/rigs` |
 | **AI brief** | Creative director → SVG artist → importer (sanitize, repair once) → animator → QA (repair once) | ~$0.05–0.20 per asset (est.) | `packages/agents` |
 | **Import** | Untrusted SVG → allowlist importer → layers (UI upload planned) | $0 | `packages/svg-engine` |
 

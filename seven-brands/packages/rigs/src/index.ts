@@ -1,10 +1,12 @@
 import type { AssetDefinition } from "@sb/asset";
 import { buildFace, FACE_EXPRESSIONS, FACE_PALETTES, type FacePalette } from "./moodicons-face";
+import { BAWAL_PALETTES, BAWAL_SIGNS, buildBawal, type BawalPalette } from "./moodicons-bawal";
 import { buildSymbol, SYMBOL_PALETTES, SYMBOLS, type SymbolPalette } from "./moodicons-symbols";
 import { buildGlyph, GLYPH_PALETTES, GLYPHS, type GlyphPalette } from "./sonicglyphs";
 
 export * from "./moodicons-face";
 export * from "./moodicons-symbols";
+export * from "./moodicons-bawal";
 export * from "./sonicglyphs";
 export { heartPath } from "./util";
 export * from "./launch";
@@ -35,6 +37,14 @@ export const RIGS: Record<string, RigInfo> = {
     variants: [...SYMBOLS],
     palettes: Object.keys(SYMBOL_PALETTES),
     build: (v, p) => buildSymbol({ symbol: v as (typeof SYMBOLS)[number], palette: (p ?? "classic") as SymbolPalette }),
+  },
+  "moodicons-bawal@1": {
+    id: "moodicons-bawal@1",
+    brand: "moodicons",
+    label: "Moodicons Bawal signs (PH public rules)",
+    variants: [...BAWAL_SIGNS],
+    palettes: Object.keys(BAWAL_PALETTES),
+    build: (v, p) => buildBawal({ sign: v as (typeof BAWAL_SIGNS)[number], palette: (p ?? "classic") as BawalPalette }),
   },
   "sonicglyphs-line@1": {
     id: "sonicglyphs-line@1",

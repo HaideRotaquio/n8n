@@ -20,7 +20,7 @@ export async function catalogItems(brand: Brand): Promise<CatalogItem[]> {
       isFree,
       cover: r.cover,
       category,
-      categoryLabel: category ? (labels.get(category) ?? category.replace(/-/g, " ")) : null,
+      categoryLabel: category ? (labels.get(category) ?? category.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase())) : null,
       searchText: [...(r.cover?.tags ?? []), r.product.title, r.product.description].join(" ").toLowerCase(),
     };
   });

@@ -60,6 +60,7 @@ const defs: Record<BrandSlug, BrandDefinition> = {
           { slug: "characters", label: "Cute characters" },
           { slug: "stickers", label: "Animated stickers" },
           { slug: "seasonal", label: "Seasonal" },
+          { slug: "bawal", label: "Bawal signs (PH)" },
         ],
       },
       audiences: ["Consumers", "Social media creators", "Designers", "Developers", "Digital marketers"],

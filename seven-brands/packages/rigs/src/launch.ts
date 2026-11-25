@@ -1,4 +1,5 @@
 import { buildFace, FACE_EXPRESSIONS, FACE_PALETTES, type FacePalette } from "./moodicons-face";
+import { BAWAL_SIGNS, buildBawal } from "./moodicons-bawal";
 import { buildSymbol, SYMBOL_PALETTES, SYMBOLS, type SymbolPalette } from "./moodicons-symbols";
 import { buildGlyph, GLYPH_PALETTES, GLYPHS, type GlyphPalette } from "./sonicglyphs";
 
@@ -50,7 +51,20 @@ function moodicons(): ProductPlan[] {
       prices: MOOD_SINGLE,
     };
   });
+  const bawal = BAWAL_SIGNS.map((b): ProductPlan => {
+    const ad = buildBawal({ sign: b });
+    return { slug: ad.slug, title: ad.name, description: `${ad.a11y.label}. Animated sign with sound; no words in the artwork, so it works in any language.`, kind: "single", assetSlugs: [ad.slug], prices: MOOD_SINGLE };
+  });
   return [
+    {
+      slug: "bawal-signs-davao-pack",
+      title: "Bawal Signs — Davao Pack",
+      description: `All ${BAWAL_SIGNS.length} animated public-place signs: bawal mag-sigarilyo, maglabay ug basura, magluwa, mangihi, paputok — plus the green Designated Smoking Area sign. For posts, barangay and school announcements, offices and screens.`,
+      kind: "pack",
+      assetSlugs: BAWAL_SIGNS.map((b) => buildBawal({ sign: b }).slug),
+      prices: { personal: 900, commercial: 2900, team: 5900, agency: 11900 },
+    },
+    ...bawal,
     {
       slug: "free-starter-pack",
       title: "Free Starter Pack",
@@ -121,7 +135,7 @@ export function launchCatalog(brandSlug: string): ProductPlan[] {
 
 /** Rig jobs (rig id + palettes) needed so every asset in the launch catalog exists. */
 export function launchRigJobs(brandSlug: string): { rig: string; palettes: string[] }[] {
-  if (brandSlug === "moodicons") return [{ rig: "moodicons-face@1", palettes: facePalettes }, { rig: "moodicons-symbols@1", palettes: symbolPalettes }];
+  if (brandSlug === "moodicons") return [{ rig: "moodicons-face@1", palettes: facePalettes }, { rig: "moodicons-symbols@1", palettes: symbolPalettes }, { rig: "moodicons-bawal@1", palettes: ["classic"] }];
   if (brandSlug === "sonicglyphs") return [{ rig: "sonicglyphs-line@1", palettes: glyphPalettes }];
   return [];
 }

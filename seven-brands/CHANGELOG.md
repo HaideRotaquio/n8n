@@ -2,6 +2,15 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.4.1] — 2026-11-25 — Bawal signs (Davao)
+
+### Added
+- Moodicons "Bawal" sign rig (`moodicons-bawal@1`): animated public-place signs as known in Davao City — Bawal Mag-sigarilyo, Bawal Maglabay ug Basura Bisan Asa, Bawal Magluwa Bisan Asa, Bawal Mangihi Bisan Asa, Bawal ang Paputok — plus a green Designated Smoking Area sign. Pictograms only (no words in the artwork); Bisaya/Tagalog names in titles, English accessible labels. 100/100 QA, verified in lottie-web.
+- Launch plan: "Bawal Signs — Davao Pack" plus a single product per sign; new Moodicons category "Bawal signs (PH)".
+
+### Fixed
+- Product previews of packs with different designs now list the icons by name ("6 icons included") instead of calling them color styles; long bundles show the first 16.
+
 ## [0.4.0] — 2026-11-24 — Phase 4: Moodicons + SonicGlyphs
 
 ### Added

@@ -31,6 +31,10 @@ export function LivePreview({ assets, look, customizer, soundUrls }: { assets: P
   const current = assets[index]!;
   const [tokens, setTokens] = useState<Record<string, string>>(current.definition.tokens);
   const ad = current.definition;
+  // A product either holds one design in several color styles, or several different designs (packs and bundles).
+  const baseName = (a: PreviewAsset) => a.name.replace(/\s*\([^)]*\)$/, "");
+  const manyDesigns = new Set(assets.map(baseName)).size > 1;
+  const SHOWN = 16;
 
   useEffect(() => {
     const isReduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -112,10 +116,10 @@ export function LivePreview({ assets, look, customizer, soundUrls }: { assets: P
       {assets.length > 1 && (
         <fieldset>
           <legend className={studio ? "mb-2 font-mono text-xs uppercase tracking-wider text-[var(--color-muted-text)]" : "mb-2 text-sm font-bold"}>
-            {assets.length} color styles included
+            {manyDesigns ? `${assets.length} icons included` : `${assets.length} color styles included`}
           </legend>
           <div className="flex flex-wrap gap-2">
-            {assets.map((a, i) => {
+            {assets.slice(0, SHOWN).map((a, i) => {
               const swatch = Object.values(a.definition.tokens).slice(0, 3);
               return (
                 <button
@@ -130,10 +134,11 @@ export function LivePreview({ assets, look, customizer, soundUrls }: { assets: P
                       <span key={c} className="-ml-1 inline-block h-4 w-4 rounded-full border border-black/20 first:ml-0" style={{ background: c }} />
                     ))}
                   </span>
-                  {styleName(a)}
+                  {manyDesigns ? a.name : styleName(a)}
                 </button>
               );
             })}
+            {assets.length > SHOWN && <span className="self-center text-sm text-[var(--color-muted-text)]">and {assets.length - SHOWN} more</span>}
           </div>
         </fieldset>
       )}
