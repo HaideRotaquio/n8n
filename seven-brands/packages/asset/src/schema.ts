@@ -182,11 +182,16 @@ export const SoundCue = z
     marker: id.optional(),
     offset: num.min(-5000).max(5000).optional(),
     gain: num.min(0).max(1).default(1),
+    /** Stereo position: −1 left, 0 centre, 1 right. */
+    pan: num.min(-1).max(1).optional(),
+    /** Place the sound where this layer is on screen when the cue fires (instead of a fixed `pan`). */
+    panFrom: id.optional(),
     /** Synth preset parameters (pitch etc.) — ignored for stored sounds. */
     params: z.record(z.string().regex(/^[a-z][a-zA-Z0-9]{0,23}$/), num).optional(),
   })
   .strict()
-  .refine((c) => (c.at === undefined) !== (c.marker === undefined), "A cue needs exactly one of `at` or `marker`");
+  .refine((c) => (c.at === undefined) !== (c.marker === undefined), "A cue needs exactly one of `at` or `marker`")
+  .refine((c) => c.pan === undefined || c.panFrom === undefined, "A cue has either a fixed `pan` or `panFrom`, not both");
 export type SoundCue = z.infer<typeof SoundCue>;
 
 export const Interaction = z

@@ -63,7 +63,7 @@ function spec(g: Glyph): GlyphSpec {
           track("wave-2", "opacity", [[0, 0.2], [200, 1, "easeOut"], [700, 0.2], [1200, 0.2]]),
           track("wave-3", "opacity", [[0, 0.2], [300, 1, "easeOut"], [800, 0.2], [1200, 0.2]]),
         ],
-        sounds: [{ id: "kick", sound: "synth:kick", marker: "beat", gain: 0.9 }],
+        sounds: [{ id: "kick", sound: "synth:kick", marker: "beat", gain: 0.9, pan: 0.35 }], // the waves leave to the right
         reducedMotionFrame: 300,
       };
     case "music-note":
@@ -151,7 +151,7 @@ function spec(g: Glyph): GlyphSpec {
           track("bell", "rotate", [[0, 0, "easeOut"], [100, 14, "easeInOut"], [250, -11, "easeInOut"], [400, 8, "easeInOut"], [550, -5, "easeInOut"], [700, 2, "easeInOut"], [850, 0], [1400, 0]]),
           ...(g === "notification" ? [track("badge", "scale", [[0, 0.6, "easeOut"], [120, 1.25, SPRING_SOFT], [700, 1], [1400, 0.6]])] : []),
         ],
-        sounds: [{ id: "ding", sound: g === "bell" ? "synth:bell" : "synth:notify", marker: "ding", gain: 0.8 }],
+        sounds: [{ id: "ding", sound: g === "bell" ? "synth:bell" : "synth:notify", marker: "ding", gain: 0.8, ...(g === "notification" ? { panFrom: "badge" } : {}) }],
         reducedMotionFrame: 900,
       };
     case "vinyl":
@@ -192,8 +192,8 @@ function spec(g: Glyph): GlyphSpec {
           return track(`bar-${i + 1}`, "scaleY", [[0, a, "easeInOut"], [300, b, "easeInOut"], [600, (a + b) / 2, "easeInOut"], [900, b * 0.8, "easeInOut"], [1200, a]]);
         }),
         sounds: [
-          { id: "kick", sound: "synth:kick", marker: "beat", gain: 0.8 },
-          { id: "tick", sound: "synth:click", marker: "off", gain: 0.5 },
+          { id: "kick", sound: "synth:kick", marker: "beat", gain: 0.8, pan: -0.3 },
+          { id: "tick", sound: "synth:click", marker: "off", gain: 0.5, pan: 0.3 },
         ],
         reducedMotionFrame: 300,
       };
@@ -275,8 +275,8 @@ function spec(g: Glyph): GlyphSpec {
           track("head", "scaleY", [[0, 1], [200, 0.8, "easeOut"], [320, 1], [600, 0.8, "easeOut"], [720, 1], [1000, 1]]),
         ],
         sounds: [
-          { id: "hit-1", sound: "synth:kick", marker: "hit-1", gain: 0.8, params: { pitch: 1.4 } },
-          { id: "hit-2", sound: "synth:shutter", marker: "hit-2", gain: 0.6 },
+          { id: "hit-1", sound: "synth:kick", marker: "hit-1", gain: 0.8, params: { pitch: 1.4 }, pan: -0.5 }, // left stick
+          { id: "hit-2", sound: "synth:shutter", marker: "hit-2", gain: 0.6, pan: 0.5 }, // right stick
         ],
         reducedMotionFrame: 200,
       };

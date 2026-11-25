@@ -76,7 +76,7 @@ function spec(s: BawalSign): SignSpec {
           { id: "can", kind: "shape", shape: { type: "rect", x: 35, y: 22, width: 7, height: 11, rx: 1.5 }, fill: { token: "drop" }, stroke: ink, strokeWidth: 2, origin: [38.5, 27.5] },
         ],
         duration: 1800,
-        markers: [{ id: "stamp", at: 1000 }],
+        markers: [{ id: "land", at: 800 }, { id: "stamp", at: 1000 }],
         tracks: [
           track("paper-ball", "translateY", [[0, -6, "easeIn"], [700, 11], [1800, 11]]),
           track("paper-ball", "rotate", [[0, 0, "easeIn"], [700, 90], [1800, 90]]),
@@ -86,7 +86,10 @@ function spec(s: BawalSign): SignSpec {
           track("can", "opacity", [[0, 0], [150, 0, "easeOut"], [300, 1], [1500, 1, "easeIn"], [1750, 0], [1800, 0]]),
           ...stamp(1000, 1800),
         ],
-        sounds: [{ id: "stamp", sound: "synth:pop", marker: "stamp", gain: 0.8, params: { pitch: 0.7 } }],
+        sounds: [
+          { id: "land", sound: "synth:click", marker: "land", gain: 0.5, params: { pitch: 0.6 }, panFrom: "can" },
+          { id: "stamp", sound: "synth:pop", marker: "stamp", gain: 0.8, params: { pitch: 0.7 } },
+        ],
         reducedMotionFrame: 900,
       };
     case "spitting":

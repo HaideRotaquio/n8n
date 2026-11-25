@@ -1,6 +1,6 @@
 "use client";
 
-import { cueTime, type AssetDefinition } from "@sb/asset/runtime";
+import { cuePan, cueTime, type AssetDefinition } from "@sb/asset/runtime";
 import { AssetPlayer } from "@sb/player";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -55,7 +55,9 @@ export function LivePreview({ assets, look, customizer, soundUrls }: { assets: P
     return () => p.destroy();
   }, [ad]);
 
-  const cues = useMemo(() => ad.sounds.map((c) => ({ id: c.id, at: cueTime(c, ad.timeline), sound: c.sound.startsWith("snd_") ? "recorded" : c.sound.replace(/^synth:/, "") })), [ad]);
+  const cues = useMemo(() => ad.sounds.map((c) => ({ id: c.id, at: cueTime(c, ad.timeline), pan: cuePan(c, ad), sound: c.sound.startsWith("snd_") ? "recorded" : c.sound.replace(/^synth:/, "") })), [ad]);
+  /** Mixing-desk style position: "C", "L40", "R75". */
+  const panLabel = (p: number) => (Math.abs(p) < 0.05 ? "C" : `${p < 0 ? "L" : "R"}${Math.round(Math.abs(p) * 100)}`);
   const studio = look === "studio";
   const btn = studio
     ? "rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 font-mono text-xs uppercase tracking-wider hover:border-[var(--color-primary)]"
@@ -106,7 +108,7 @@ export function LivePreview({ assets, look, customizer, soundUrls }: { assets: P
           <ul className="mt-2 flex flex-wrap gap-x-4 font-mono text-xs text-[var(--color-muted-text)]">
             {cues.map((c) => (
               <li key={c.id}>
-                <span className="text-[var(--color-accent)]">●</span> {c.sound} @ {c.at} ms
+                <span className="text-[var(--color-accent)]">●</span> {c.sound} @ {c.at} ms · {panLabel(c.pan)}
               </li>
             ))}
           </ul>

@@ -156,6 +156,7 @@ export function assembleDefinition(brandSlug: string, concept: Concept, imported
       marker: idify(s.marker) || markers[0]?.id,
       gain: Math.min(Math.max(s.gain, 0.1), 1),
       params: { pitch: Math.min(Math.max(s.pitch, 0.5), 2) },
+      ...(Number.isFinite(s.pan) && Math.abs(s.pan) >= 0.05 ? { pan: Math.round(Math.min(Math.max(s.pan, -1), 1) * 100) / 100 } : {}),
     })),
     interactions: [
       { on: "load", action: "play" },

@@ -2,7 +2,15 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
-## [0.4.1] — 2026-11-25 — Bawal signs (Davao)
+## [0.4.2] — 2026-11-25 — Stereo sound placement
+
+### Added
+- Sound cues can be placed left/right: a fixed `pan` (−1 left … 1 right) or `panFrom: <layer>` (the sound sits where that layer is on screen when it fires). Equal-power pan law everywhere.
+- Player (Web Component, React, storefront and admin previews) pans with the Web Audio stereo panner; WAV, MP4 and WebM exports become 2-channel when an icon pans (verified with ffprobe); unpanned icons stay mono. Loudness normalization measures both channels (BS.1770 multi-channel).
+- Panned content: SonicGlyphs drum (left/right sticks), speaker, equalizer, notification badge; Moodicons sparkles, kiss and thinking faces; Bawal littering sign gets a "land" sound where the can falls. The animator agent may set a pan per sound.
+- Storefront: SonicGlyphs cue sheet shows each cue's position (C, L40, R75); product facts say "stereo"; FAQ explains it is stereo, not 3D/surround.
+
+ — 2026-11-25 — Bawal signs (Davao)
 
 ### Added
 - Moodicons "Bawal" sign rig (`moodicons-bawal@1`): animated public-place signs as known in Davao City — Bawal Mag-sigarilyo, Bawal Maglabay ug Basura Bisan Asa, Bawal Magluwa Bisan Asa, Bawal Mangihi Bisan Asa, Bawal ang Paputok — plus a green Designated Smoking Area sign. Pictograms only (no words in the artwork); Bisaya/Tagalog names in titles, English accessible labels. 100/100 QA, verified in lottie-web.

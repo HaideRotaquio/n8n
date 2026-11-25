@@ -55,7 +55,7 @@ export const FIXTURE_PLAN: MotionPlan = {
     { target: "sparkle-b", property: "opacity", origin: [54, 18], keyframes: [{ at: 0, value: 0.2, ease: "linear" }, { at: 400, value: 0.2, ease: "easeOut" }, { at: 600, value: 1, ease: "easeIn" }, { at: 1100, value: 0.2, ease: "linear" }, { at: 1400, value: 0.2, ease: "linear" }] },
   ],
   markers: [{ id: "pop", at: 0 }],
-  sounds: [{ marker: "pop", preset: "chime", pitch: 1.2, gain: 0.7 }],
+  sounds: [{ marker: "pop", preset: "chime", pitch: 1.2, gain: 0.7, pan: 0 }],
   stillFrameMs: 140,
 };
 

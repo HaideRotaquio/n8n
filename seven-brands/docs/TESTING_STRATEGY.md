@@ -11,7 +11,7 @@
 | Provider contract | Vitest | Recorded request shapes and signed payloads for Lemon Squeezy and Paddle (shapes taken from their official SDKs) through the real webhook handler and Postgres | `packages/commerce` |
 | End-to-end | Playwright | Production builds of the admin (+ the real worker) and the storefront (host-routed, `*.localhost`), real Postgres (`daos_e2e_test`), labelled test payment provider | `apps/admin/e2e`, `apps/storefront/e2e` |
 
-Current count (2026-11-24): **378 unit/integration/browser (+3 S3 tests that need the moto emulator) + 28 E2E (21 admin, 7 storefront), all passing.** Lottie output is checked in Chromium with lottie-web against our own renderer for every rig asset.
+Current count (2026-11-24): **396 unit/integration/browser (+3 S3 tests that need the moto emulator) + 28 E2E (21 admin, 7 storefront), all passing.** Lottie output is checked in Chromium with lottie-web against our own renderer for every rig asset.
 
 Not covered by automated tests: real calls to Lemon Squeezy and Paddle. Their adapters are tested against the request/response shapes of the official SDKs, but no sandbox account exists yet; see `PAYMENTS_SETUP.md` for the manual check once one does.
 

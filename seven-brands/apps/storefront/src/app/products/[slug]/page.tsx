@@ -1,3 +1,4 @@
+import { cuePan } from "@sb/asset";
 import { LICENSE_TYPE_LABELS, type LicenseType } from "@sb/core";
 import { getDb, getPublishedProduct } from "@sb/db";
 import type { Metadata } from "next";
@@ -54,7 +55,7 @@ export default async function ProductPage({ params }: Props) {
       facts={[
         { label: "Files", value: designs > 1 ? `${detail.assets.length} icons (${designs} designs)` : `${detail.assets.length} ${detail.assets.length === 1 ? "icon" : "color styles"}` },
         { label: "Loop", value: `${(first.timeline.duration / 1000).toFixed(1)} s` },
-        { label: "Sound", value: cues ? `${cues} synced cue${cues === 1 ? "" : "s"}` : "none" },
+        { label: "Sound", value: cues ? `${cues} synced cue${cues === 1 ? "" : "s"}${detail.assets.some((a) => a.definition.sounds.some((c) => cuePan(c, a.definition) !== 0)) ? ", stereo" : ""}` : "none" },
         { label: "Formats", value: FORMATS },
       ]}
       buy={<BuyForm slug={slug} options={options} signedIn={!!shopper} checkoutAvailable={!!getCommerce().active} />}

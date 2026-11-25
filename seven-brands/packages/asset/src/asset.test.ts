@@ -163,3 +163,24 @@ describe("QA", () => {
     expect(runQa(ad).warnings.map((w) => w.code)).toContain("spring-unsettled");
   });
 });
+
+describe("stereo placement", async () => {
+  const { cuePan, runQa, parseAssetDefinition, BEATING_HEART } = await import("./index");
+  it("resolves fixed pans and layer-following pans, clamped to -1..1", () => {
+    const base = structuredClone(BEATING_HEART) as any;
+    const fixed = parseAssetDefinition({ ...base, sounds: base.sounds.map((c: any) => ({ ...c, pan: -0.4 })) });
+    expect(cuePan(fixed.sounds[0]!, fixed)).toBe(-0.4);
+    const layerId = fixed.layers[0]!.id;
+    const follow = parseAssetDefinition({ ...base, layers: base.layers.map((l: any, i: number) => (i === 0 ? { ...l, origin: [56, 32] } : l)), sounds: base.sounds.map((c: any) => ({ ...c, panFrom: layerId })) });
+    expect(cuePan(follow.sounds[0]!, follow)).toBe(0.75); // pivot at x=56 in a 64-wide view
+    expect(cuePan(parseAssetDefinition(base).sounds[0]!, parseAssetDefinition(base))).toBe(0);
+  });
+  it("rejects a pan outside -1..1, both pan kinds at once, and unknown pan layers", () => {
+    const base = structuredClone(BEATING_HEART) as any;
+    expect(() => parseAssetDefinition({ ...base, sounds: base.sounds.map((c: any) => ({ ...c, pan: 1.5 })) })).toThrow();
+    expect(() => parseAssetDefinition({ ...base, sounds: base.sounds.map((c: any) => ({ ...c, pan: 0.2, panFrom: "x" })) })).toThrow();
+    const r = runQa({ ...base, sounds: base.sounds.map((c: any) => ({ ...c, panFrom: "nope" })) });
+    expect(r.errors.map((e) => e.code)).toContain("unknown-pan-layer");
+  });
+});
+

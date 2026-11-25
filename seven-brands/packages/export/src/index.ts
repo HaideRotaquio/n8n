@@ -5,12 +5,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   cueTime,
+  cuePan,
   localTime,
   renderAnimatedSvgString,
   renderFrameSvg,
   type AssetDefinition,
 } from "@sb/asset";
-import { DEFAULT_SAMPLE_RATE, encodeWav, mix, normalize, parseSynthRef, renderPreset, type NormalizeResult } from "@sb/audio";
+import { DEFAULT_SAMPLE_RATE, encodeWav, mix, mixStereo, normalize, normalizeChannels, parseSynthRef, renderPreset, type NormalizeResult } from "@sb/audio";
 import { Resvg } from "@resvg/resvg-js";
 import { build } from "esbuild";
 import { strToU8, zipSync } from "fflate";
@@ -81,10 +82,13 @@ export function renderFrames(ad: AssetDefinition, opts: ExportOptions = {}): { f
 // ─── Audio ───────────────────────────────────────────────────────────────────
 
 export interface SoundTrack {
+  /** One channel (mono) or two (stereo: left, right). Stereo only when at least one cue is panned. */
+  channels: Float32Array[];
+  /** Mono mix-down (same as channels[0] for mono tracks). */
   samples: Float32Array;
   sampleRate: number;
   normalization: NormalizeResult;
-  cues: { id: string; sound: string; atMs: number; gain: number }[];
+  cues: { id: string; sound: string; atMs: number; gain: number; pan: number }[];
 }
 
 /** Stored sounds (`snd_…`) are passed in already decoded; synth sounds are rendered here. */
@@ -98,22 +102,29 @@ export function renderSoundTrack(
   const timelineCues = ad.sounds.filter(
     (c) => !ad.interactions.some((i) => i.action === "playSound" && i.cue === c.id && i.on !== "load"),
   );
-  const cueList = (timelineCues.length ? timelineCues : ad.sounds).map((c) => ({ c, at: cueTime(c, ad.timeline) }));
+  const cueList = (timelineCues.length ? timelineCues : ad.sounds).map((c) => ({ c, at: cueTime(c, ad.timeline), pan: cuePan(c, ad) }));
   const mixCues = [];
   const cues = [];
   for (let l = 0; l < loops; l++) {
-    for (const { c, at } of cueList) {
+    for (const { c, at, pan } of cueList) {
       const preset = parseSynthRef(c.sound);
       const buffer = preset ? renderPreset(preset, c.params ?? {}, sampleRate) : stored[c.sound];
       if (!buffer) throw new Error(`Sound ${c.sound} is not available for export`);
       const atMs = l * ad.timeline.duration + at;
-      mixCues.push({ buffer, at: atMs / 1000, gain: c.gain });
-      if (l === 0) cues.push({ id: c.id, sound: c.sound, atMs, gain: c.gain });
+      mixCues.push({ buffer, at: atMs / 1000, gain: c.gain, pan });
+      if (l === 0) cues.push({ id: c.id, sound: c.sound, atMs, gain: c.gain, pan });
     }
   }
-  const samples = mix(mixCues, (ad.timeline.duration * loops) / 1000, sampleRate);
+  const seconds = (ad.timeline.duration * loops) / 1000;
+  if (cueList.some((c) => c.pan !== 0)) {
+    const channels = mixStereo(mixCues, seconds, sampleRate);
+    const normalization = normalizeChannels(channels, sampleRate);
+    const samples = channels[0].map((v, i) => (v + channels[1][i]!) / 2);
+    return { channels, samples, sampleRate, normalization, cues };
+  }
+  const samples = mix(mixCues, seconds, sampleRate);
   const normalization = normalize(samples, sampleRate);
-  return { samples, sampleRate, normalization, cues };
+  return { channels: [samples], samples, sampleRate, normalization, cues };
 }
 
 // ─── Video via ffmpeg ────────────────────────────────────────────────────────
@@ -179,7 +190,7 @@ async function exportVideo(
     const args = ["-f", "image2pipe", "-framerate", String(fps), "-c:v", "png", "-i", "-"];
     if (track) {
       const wav = path.join(dir, "audio.wav");
-      await writeFile(wav, encodeWav([track.samples], track.sampleRate));
+      await writeFile(wav, encodeWav(track.channels, track.sampleRate));
       args.push("-i", wav);
     }
     if (kind === "mp4") {
@@ -333,8 +344,8 @@ export async function buildPackage(ad: AssetDefinition, opts: PackageOptions): P
   if (formats.has("webm")) add(`video/${slug}.webm`, await exportWebm(ad, opts, opts.stored));
   const track = formats.has("wav") ? renderSoundTrack(ad, 1, opts.stored) : null;
   if (track) {
-    add(`audio/${slug}.wav`, encodeWav([track.samples], track.sampleRate));
-    add(`audio/${slug}-cues.json`, JSON.stringify({ durationMs: ad.timeline.duration, cues: track.cues, loudnessLufs: round(track.normalization.loudness), peakDbfs: round(track.normalization.peakDbfs) }, null, 2));
+    add(`audio/${slug}.wav`, encodeWav(track.channels, track.sampleRate));
+    add(`audio/${slug}-cues.json`, JSON.stringify({ durationMs: ad.timeline.duration, channels: track.channels.length === 2 ? "stereo" : "mono", cues: track.cues, loudnessLufs: round(track.normalization.loudness), peakDbfs: round(track.normalization.peakDbfs) }, null, 2));
   }
   // Stored (non-synth) sounds travel with the package so components can play them offline.
   const soundUrls: Record<string, string> = {};

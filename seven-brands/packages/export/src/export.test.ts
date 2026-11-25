@@ -97,12 +97,28 @@ describe("sound track", () => {
   it("places the heartbeat cue once per loop and normalizes loudness", () => {
     const t = renderSoundTrack(ad, 3)!;
     expect(t.samples.length).toBe(3 * 48_000);
-    expect(t.cues).toEqual([{ id: "thump", sound: "synth:heartbeat", atMs: 0, gain: 0.9 }]);
+    expect(t.cues).toEqual([{ id: "thump", sound: "synth:heartbeat", atMs: 0, gain: 0.9, pan: 0 }]);
+    expect(t.channels).toHaveLength(1); // nothing panned → mono, as before
     expect(t.normalization.peakDbfs).toBeLessThanOrEqual(-0.99);
     // energy at the start of loop 2 (1.0 s) proves the cue repeats
     const at = (s: number) => Math.max(...Array.from(t.samples.slice(s * 48_000, s * 48_000 + 4800), Math.abs));
     expect(at(1)).toBeGreaterThan(0.05);
   });
+  it("is stereo when a cue is panned, with the sound on the right side", async () => {
+    const panned = parseAssetDefinition({ ...structuredClone(BEATING_HEART), sounds: BEATING_HEART.sounds!.map((c) => ({ ...c, pan: 0.8 })) });
+    const t = renderSoundTrack(panned, 1)!;
+    expect(t.channels).toHaveLength(2);
+    const energy = (x: Float32Array) => x.reduce((s, v) => s + v * v, 0);
+    expect(energy(t.channels[1]!)).toBeGreaterThan(5 * energy(t.channels[0]!));
+    expect(t.cues[0]!.pan).toBe(0.8);
+    expect(t.normalization.peakDbfs).toBeLessThanOrEqual(-0.99);
+    const mp4 = await exportMp4(panned, { size: 96, fps: 10 });
+    const audio = (await probe(mp4, "mp4")).streams.find((st) => st.codec_type === "audio") as { channels?: number };
+    expect(audio.channels).toBe(2);
+    const mono = (await probe(await exportMp4(ad, { size: 96, fps: 10 }), "mp4")).streams.find((st) => st.codec_type === "audio") as { channels?: number };
+    expect(mono.channels).toBe(1);
+  }, 60_000);
+
   it("computes loops for ~3 s of material", () => {
     expect(loopsFor(ad)).toBe(3);
     expect(loopsFor({ ...ad, timeline: { ...ad.timeline, loop: false } })).toBe(1);

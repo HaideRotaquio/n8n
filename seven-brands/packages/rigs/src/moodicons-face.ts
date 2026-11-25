@@ -291,7 +291,7 @@ function motion(e: FaceExpression): MotionSpec {
           track("bubble-2", "opacity", [[0, 0], [500, 0, "easeOut"], [800, 1], [1300, 1, "easeIn"], [1600, 0], [1800, 0]]),
           track("face", "rotate", [[0, 0, "easeInOut"], [900, 3, "easeInOut"], [1800, 0]]),
         ],
-        sounds: [{ id: "idea", sound: "synth:pluck", marker: "idea", gain: 0.5, params: { pitch: 1.2, decay: 0.6 } }],
+        sounds: [{ id: "idea", sound: "synth:pluck", marker: "idea", gain: 0.5, params: { pitch: 1.2, decay: 0.6 }, panFrom: "bubble-1" }],
         reducedMotionFrame: 900,
       };
     case "party":
@@ -345,7 +345,7 @@ function motion(e: FaceExpression): MotionSpec {
           track("kiss-heart", "translateX", [[0, 0], [200, 0, "easeOut"], [1300, 4], [1600, 4]]),
           track("kiss-heart", "opacity", [[0, 0], [200, 0, "easeOut"], [400, 1], [1000, 1, "easeIn"], [1300, 0], [1600, 0]]),
         ],
-        sounds: [{ id: "mwah", sound: "synth:pop", marker: "mwah", gain: 0.7, params: { pitch: 1.25 } }],
+        sounds: [{ id: "mwah", sound: "synth:pop", marker: "mwah", gain: 0.7, params: { pitch: 1.25 }, panFrom: "kiss-heart" }],
         reducedMotionFrame: 500,
       };
   }

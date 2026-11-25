@@ -29,7 +29,7 @@ async function open(definition: unknown, attrs = "autoplay", opts: { reducedMoti
   (page as any).__errors = errors;
   await page.setContent(
     // The first inline script records audio scheduling (AudioBufferSourceNode.start calls).
-    `<!doctype html><html><head><script>window.__starts=[];const o=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(w,...r){window.__starts.push({when:w,now:this.context.currentTime});return o.call(this,w,...r)}</script></head><body><daos-asset id="a" ${attrs}><script type="application/json">${json(definition)}</script></daos-asset><button id="b">sound</button><script>${bundle}</script></body></html>`,
+    `<!doctype html><html><head><script>window.__pans=[];const sp=AudioContext.prototype.createStereoPanner;AudioContext.prototype.createStereoPanner=function(){const n=sp.call(this);const pr=n.pan;const d=Object.getOwnPropertyDescriptor(AudioParam.prototype,"value");Object.defineProperty(pr,"value",{set(v){window.__pans.push(v);d.set.call(pr,v)},get(){return d.get.call(pr)}});return n};window.__starts=[];const o=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(w,...r){window.__starts.push({when:w,now:this.context.currentTime});return o.call(this,w,...r)}</script></head><body><daos-asset id="a" ${attrs}><script type="application/json">${json(definition)}</script></daos-asset><button id="b">sound</button><script>${bundle}</script></body></html>`,
   );
   return page;
 }
@@ -102,5 +102,28 @@ describe("<daos-asset>", () => {
     const gaps = starts.slice(1).map((s, i) => s.when - starts[i]!.when);
     for (const g of gaps) expect(g).toBeCloseTo(1, 1);
     await page.close();
+  });
+
+  it("places panned cues left/right with a stereo panner; centred cues need none", async () => {
+    const def = structuredClone(BEATING_HEART) as any;
+    def.interactions = [{ on: "load", action: "play" }];
+    def.sounds = def.sounds.map((c: any) => ({ ...c, pan: -0.6 }));
+    const page = await open(def);
+    await page.waitForFunction(() => document.getElementById("a")?.shadowRoot?.querySelector("svg"));
+    await page.evaluate(() => document.getElementById("b")!.addEventListener("click", () => (document.getElementById("a") as any).unmute()));
+    await page.click("#b");
+    await page.waitForTimeout(1300);
+    const pans: number[] = await page.evaluate(() => (window as any).__pans);
+    expect(pans.length).toBeGreaterThanOrEqual(1);
+    expect(pans.every((p) => Math.abs(p + 0.6) < 1e-6)).toBe(true);
+    await page.close();
+    const centred = await open({ ...def, sounds: def.sounds.map((c: any) => ({ ...c, pan: undefined })) });
+    await centred.waitForFunction(() => document.getElementById("a")?.shadowRoot?.querySelector("svg"));
+    await centred.evaluate(() => document.getElementById("b")!.addEventListener("click", () => (document.getElementById("a") as any).unmute()));
+    await centred.click("#b");
+    await centred.waitForTimeout(1300);
+    expect(await centred.evaluate(() => (window as any).__pans.length)).toBe(0);
+    expect(await centred.evaluate(() => (window as any).__starts.length)).toBeGreaterThanOrEqual(1);
+    await centred.close();
   });
 });

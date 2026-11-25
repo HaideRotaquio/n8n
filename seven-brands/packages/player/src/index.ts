@@ -1,5 +1,6 @@
 import {
   cueTime,
+  cuePan,
   indexTracks,
   layerOrigin,
   layerState,
@@ -273,7 +274,15 @@ export class AssetPlayer {
     src.buffer = buf;
     const g = ctx.createGain();
     g.gain.value = cue.gain;
-    src.connect(g).connect(ctx.destination);
+    // Stereo placement (StereoPannerNode uses the same equal-power law as our exports).
+    const pan = cuePan(cue, this.ad);
+    if (pan !== 0 && typeof ctx.createStereoPanner === "function") {
+      const p = ctx.createStereoPanner();
+      p.pan.value = pan;
+      src.connect(g).connect(p).connect(ctx.destination);
+    } else {
+      src.connect(g).connect(ctx.destination);
+    }
     src.start(Math.max(ctx.currentTime, whenCtx));
   }
 

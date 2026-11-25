@@ -1,5 +1,5 @@
-import type { AnimatableProperty, AssetDefinition, Easing, Keyframe, Layer, Timeline, Track } from "./schema";
-import { walkLayers } from "./helpers";
+import type { AnimatableProperty, AssetDefinition, Easing, Keyframe, Layer, SoundCue, Timeline, Track } from "./schema";
+import { cueTime, walkLayers } from "./helpers";
 
 /**
  * Motion evaluation shared by every target: the browser player, CSS keyframe export,
@@ -189,4 +189,33 @@ export function localTime(timeline: Timeline, elapsedMs: number): number {
 export function hasLayer(ad: AssetDefinition, id: string): boolean {
   for (const l of walkLayers(ad.layers)) if (l.id === id) return true;
   return false;
+}
+
+
+/**
+ * Stereo position of a cue (−1 left … 1 right): a fixed `pan`, or the horizontal position of the `panFrom` layer
+ * at the moment the cue fires (its pivot plus its own and its parents' horizontal movement). Default: centre.
+ */
+export function cuePan(cue: SoundCue, ad: AssetDefinition): number {
+  if (cue.pan !== undefined) return Math.max(-1, Math.min(1, cue.pan));
+  if (!cue.panFrom) return 0;
+  const path: Layer[] = [];
+  const find = (layers: readonly Layer[]): boolean => {
+    for (const l of layers) {
+      path.push(l);
+      if (l.id === cue.panFrom) return true;
+      if (l.kind === "group" && find(l.children)) return true;
+      path.pop();
+    }
+    return false;
+  };
+  if (!find(ad.layers)) return 0;
+  const t = cueTime(cue, ad.timeline);
+  const idx = indexTracks(ad.timeline);
+  const target = path[path.length - 1]!;
+  let x = layerOrigin(target, ad)[0];
+  for (const l of path) x += layerState(l, idx, t).translateX;
+  const [vx, , vw] = ad.viewBox;
+  const p = (x - (vx + vw / 2)) / (vw / 2);
+  return Math.max(-1, Math.min(1, Math.round(p * 100) / 100));
 }

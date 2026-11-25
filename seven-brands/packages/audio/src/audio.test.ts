@@ -130,3 +130,27 @@ describe("stored sounds", async () => {
     expect(() => prepareStoredSound(new TextEncoder().encode("not a wav file at all, sorry; definitely not RIFF data"))).toThrow(/Not a WAV/);
   });
 });
+
+describe("stereo panning", async () => {
+  const { panGains, mixStereo, integratedLoudness, integratedLoudnessChannels, normalizeChannels } = await import("./index");
+  const tone = Float32Array.from({ length: 48_000 }, (_, i) => 0.2 * Math.sin((2 * Math.PI * 440 * i) / 48_000));
+  it("uses an equal-power pan law", () => {
+    const [l, r] = panGains(-1);
+    expect(l).toBeCloseTo(1);
+    expect(r).toBeCloseTo(0);
+    const [cl, cr] = panGains(0);
+    expect(cl * cl + cr * cr).toBeCloseTo(1);
+    expect(cl).toBeCloseTo(cr);
+    expect(panGains(5)).toEqual(panGains(1));
+  });
+  it("places sounds left/right and measures a centred mix like mono", () => {
+    const [L, R] = mixStereo([{ buffer: tone, at: 0, gain: 1, pan: 1 }], 1, 48_000);
+    expect(Math.max(...L.map(Math.abs))).toBeLessThan(1e-6);
+    expect(Math.max(...R.map(Math.abs))).toBeGreaterThan(0.19);
+    const [cl, cr] = mixStereo([{ buffer: tone, at: 0, gain: 1, pan: 0 }], 1, 48_000);
+    expect(integratedLoudnessChannels([cl, cr], 48_000)).toBeCloseTo(integratedLoudness(tone, 48_000), 1);
+    const n = normalizeChannels([cl, cr], 48_000);
+    expect(n.loudness).toBeCloseTo(-16, 0);
+    expect(n.peakDbfs).toBeLessThanOrEqual(-1 + 1e-6);
+  });
+});

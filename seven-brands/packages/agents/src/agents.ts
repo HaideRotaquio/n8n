@@ -82,6 +82,7 @@ export const MotionPlanSchema = z.object({
       preset: z.enum(PRESET_IDS as [string, ...string[]]),
       pitch: z.number().describe("0.5-2, 1 = natural"),
       gain: z.number().describe("0.3-1"),
+      pan: z.number().describe("Stereo position -1 (left) to 1 (right); 0 = centre. Match where the sound happens on screen."),
     }),
   ),
   stillFrameMs: z.number().describe("Most expressive moment, shown when users prefer reduced motion"),

@@ -139,6 +139,7 @@ export function runQa(input: unknown): QaResult {
     } catch (e) {
       errors.push({ code: "unknown-marker", message: (e as Error).message, path: `sounds.${c.id}` });
     }
+    if (c.panFrom && !ids.has(c.panFrom)) errors.push({ code: "unknown-pan-layer", message: `Sound cue "${c.id}" pans with unknown layer "${c.panFrom}"`, path: `sounds.${c.id}` });
   }
   for (const it of ad.interactions) {
     if (it.cue && !cueIds.has(it.cue)) errors.push({ code: "unknown-cue", message: `Interaction refers to unknown cue "${it.cue}"` });

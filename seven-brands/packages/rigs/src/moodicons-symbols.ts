@@ -153,8 +153,8 @@ function spec(sym: MoodSymbol): SymbolSpec {
           track("small", "scale", [[0, 1], [1000, 1, "easeInOut"], [1250, 0.5, "easeInOut"], [1500, 1]]),
         ],
         sounds: [
-          { id: "a", sound: "synth:chime", marker: "a", gain: 0.5, params: { pitch: 1.8 } },
-          { id: "b", sound: "synth:chime", marker: "b", gain: 0.35, params: { pitch: 2.2 } },
+          { id: "a", sound: "synth:chime", marker: "a", gain: 0.5, params: { pitch: 1.8 }, panFrom: "big" },
+          { id: "b", sound: "synth:chime", marker: "b", gain: 0.35, params: { pitch: 2.2 }, panFrom: "medium" },
         ],
         reducedMotionFrame: 250,
       };

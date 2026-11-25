@@ -11,7 +11,7 @@ Every product is a versioned JSON document (`asset_version.definition`, immutabl
 | `viewBox`, `layers` | Tree of groups and shapes (path, circle, ellipse, rect, line, polygon, polyline). Path data and points are validated character-by-character. |
 | `tokens` | Named `#RRGGBB` colors; layers reference them (`{ token: "primary" }`). Customers can change them. |
 | `timeline` | Duration, loop (forever / N / once), tracks (translate, rotate, scale, scaleX/Y, opacity) with keyframes and easing (linear, ease presets, cubic-bezier, physical springs), and named markers. |
-| `sounds` | Cues at a time or marker: `synth:<preset>` (procedural, owned) or `snd_…` (stored sound from the library, with a license record). |
+| `sounds` | Cues at a time or marker, optionally placed in stereo (`pan` −1…1 or `panFrom: <layer>`): `synth:<preset>` (procedural, owned) or `snd_…` (stored sound from the library, with a license record). |
 | `interactions` | load / hover / click / focus / inView → play, restart, toggle, playSound. |
 | `a11y` | Label and the still frame shown under reduced motion. |
 | `provenance` | `rig`, `ai-assisted`, `manual` or `fixture`. |

@@ -107,23 +107,35 @@ export function fadeEdges(x: Float32Array, sampleRate: number, ms = 3): Float32A
  * Signals shorter than one block are measured as a single block.
  */
 export function integratedLoudness(x: Float32Array, sampleRate: number): number {
+  return integratedLoudnessChannels([x], sampleRate);
+}
+
+/**
+ * Multi-channel form (BS.1770-4, front channels weighted 1.0): per 400 ms block, the K-weighted mean squares of all
+ * channels are summed, then gated as for mono. A centred sound split equally to L/R measures the same as mono.
+ */
+export function integratedLoudnessChannels(channels: readonly Float32Array[], sampleRate: number): number {
   // K-weighting stage parameters as used by pyloudnorm (RBJ shelf/high-pass forms).
   const pre = biquad("highshelf", 1500, Math.SQRT1_2, sampleRate, 4.0);
   const rlb = biquad("highpass", 38, 0.5, sampleRate);
-  const k = applyBiquad(applyBiquad(x, pre), rlb);
+  const ks = channels.map((x) => applyBiquad(applyBiquad(x, pre), rlb));
+  const len = ks[0]?.length ?? 0;
   const block = Math.floor(0.4 * sampleRate);
   const ms: number[] = [];
-  if (k.length < block) {
-    let sum = 0;
-    for (let i = 0; i < k.length; i++) sum += k[i]! * k[i]!;
-    ms.push(sum / k.length);
-  } else {
-    const hop = Math.floor(block / 4);
-    for (let start = 0; start + block <= k.length; start += hop) {
+  const blockPower = (start: number, n: number) => {
+    let total = 0;
+    for (const k of ks) {
       let sum = 0;
-      for (let i = start; i < start + block; i++) sum += k[i]! * k[i]!;
-      ms.push(sum / block);
+      for (let i = start; i < start + n; i++) sum += k[i]! * k[i]!;
+      total += sum / n;
     }
+    return total;
+  };
+  if (len === 0) return -Infinity;
+  if (len < block) ms.push(blockPower(0, len));
+  else {
+    const hop = Math.floor(block / 4);
+    for (let start = 0; start + block <= len; start += hop) ms.push(blockPower(start, block));
   }
   const lufs = (m: number) => -0.691 + 10 * Math.log10(m);
   const abs = ms.filter((m) => m > 0 && lufs(m) > -70);
@@ -177,4 +189,32 @@ export function mix(cues: readonly MixCue[], durationSec: number, sampleRate: nu
     }
   }
   return fadeEdges(out, sampleRate, 2);
+}
+
+
+/** Normalizes several channels together (same gain on each), like `normalize` for mono. */
+export function normalizeChannels(channels: Float32Array[], sampleRate: number, targetLufs = -16, peakCeilingDbfs = -1): NormalizeResult {
+  const current = integratedLoudnessChannels(channels, sampleRate);
+  const p = Math.max(...channels.map(peak));
+  if (!Number.isFinite(current) || p === 0) return { gainDb: 0, loudness: current, peakDbfs: dbfs(p), limitedByPeak: false };
+  let gainDb = targetLufs - current;
+  const maxGainDb = peakCeilingDbfs - dbfs(p);
+  const limitedByPeak = gainDb > maxGainDb;
+  if (limitedByPeak) gainDb = maxGainDb;
+  for (const c of channels) scale(c, 10 ** (gainDb / 20));
+  return { gainDb, loudness: integratedLoudnessChannels(channels, sampleRate), peakDbfs: dbfs(Math.max(...channels.map(peak))), limitedByPeak };
+}
+
+/** Equal-power pan law: −1 left, 0 centre (−3 dB each side), 1 right. Total power stays constant. */
+export function panGains(pan: number): [number, number] {
+  const p = Math.max(-1, Math.min(1, pan));
+  const a = ((p + 1) * Math.PI) / 4;
+  return [Math.cos(a), Math.sin(a)];
+}
+
+/** Mixes mono cues into a stereo pair, placing each cue with `panGains`. */
+export function mixStereo(cues: readonly (MixCue & { pan: number })[], durationSec: number, sampleRate: number): [Float32Array, Float32Array] {
+  const left = cues.map((c) => ({ ...c, gain: c.gain * panGains(c.pan)[0] }));
+  const right = cues.map((c) => ({ ...c, gain: c.gain * panGains(c.pan)[1] }));
+  return [mix(left, durationSec, sampleRate), mix(right, durationSec, sampleRate)];
 }

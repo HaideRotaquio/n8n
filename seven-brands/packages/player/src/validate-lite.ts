@@ -63,6 +63,8 @@ export function isAssetDefinition(v: unknown): v is AssetDefinition {
     if (!isObj(c) || typeof c.sound !== "string" || typeof c.id !== "string") return false;
     if (c.at !== undefined && !isNum(c.at)) return false;
     if (c.gain !== undefined && !isNum(c.gain)) return false;
+    if (c.pan !== undefined && !(isNum(c.pan) && (c.pan as number) >= -1 && (c.pan as number) <= 1)) return false;
+    if (c.panFrom !== undefined && typeof c.panFrom !== "string") return false;
   }
   if (!isObj(v.a11y) || typeof v.a11y.label !== "string" || !isNum(v.a11y.reducedMotionFrame)) return false;
   return true;
