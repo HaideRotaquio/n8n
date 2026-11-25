@@ -12,6 +12,7 @@ import "@fontsource/inter/latin-600.css";
 import { themeToCssVars } from "@sb/core";
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
+import { SoundProvider } from "@/components/sound";
 import { designFor } from "@/designs";
 import { getCommerce, getShopper, getStore } from "@/lib/store";
 import "./globals.css";
@@ -45,9 +46,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="en" style={{ colorScheme: dark ? "dark" : "light" }}>
       <body className="flex min-h-screen flex-col antialiased" style={vars as CSSProperties} data-layout={c.layout}>
-        <Shell brandName={c.name} tagline={c.tagline} signedIn={!!shopper} testMode={!!active?.testMode}>
-          {children}
-        </Shell>
+        <SoundProvider>
+          <Shell brandName={c.name} tagline={c.tagline} signedIn={!!shopper} testMode={!!active?.testMode}>
+            {children}
+          </Shell>
+        </SoundProvider>
       </body>
     </html>
   );

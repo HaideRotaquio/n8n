@@ -1,6 +1,7 @@
 import type { AssetDefinition } from "@sb/asset";
 import type { ReactNode } from "react";
 import type { PreviewAsset } from "@/components/live-preview";
+import type { HoverCue } from "@/components/sound";
 
 export interface CatalogItem {
   slug: string;
@@ -15,6 +16,8 @@ export interface CatalogItem {
   categoryLabel: string | null;
   /** Lowercased title, description and tags, for search. */
   searchText: string;
+  /** The cover icon's sound cues, for hover-to-hear. */
+  cues: HoverCue[];
 }
 
 export interface ShellProps {

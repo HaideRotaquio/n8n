@@ -112,7 +112,7 @@ test("search, categories and the live preview (sound off by default)", async ({ 
   await expect(page).toHaveURL(/category=/);
   await page.goto("/products/beating-heart");
   await expect(page.getByTestId("live-preview").locator("svg")).toBeVisible();
-  const sound = page.getByRole("button", { name: /sound/i });
+  const sound = page.getByRole("button", { name: /Turn sound on/ });
   await expect(sound).toHaveAttribute("aria-pressed", "false");
   await page.goto("/help/licenses");
   await expect(page.getByRole("heading", { name: "Commercial" })).toBeVisible();
@@ -129,6 +129,33 @@ test("free products are claimed without checkout and arrive with a license", asy
   await page.waitForURL(/\/account\?claimed=1/);
   await expect(page.getByText("It's yours!")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Free Heart" })).toBeVisible();
+});
+
+test("hover to hear: silent until sound is switched on, then hovering an icon plays it", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as any).__starts = 0;
+    const o = AudioBufferSourceNode.prototype.start;
+    AudioBufferSourceNode.prototype.start = function (...a: any[]) {
+      (window as any).__starts++;
+      return o.apply(this, a as any);
+    };
+  });
+  await page.goto("/");
+  const toggle = page.getByRole("button", { name: /Sound off/ });
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  const card = page.getByRole("list", { name: "Products" }).locator("[data-hover-sound]").first();
+  await card.hover();
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => (window as any).__starts)).toBe(0);
+
+  await toggle.click();
+  await expect(page.getByRole("button", { name: /Sound on/ })).toHaveAttribute("aria-pressed", "true");
+  await page.mouse.move(0, 0);
+  await card.hover();
+  await expect.poll(() => page.evaluate(() => (window as any).__starts), { timeout: 5000 }).toBeGreaterThan(0);
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Sound on/ })).toBeVisible(); // remembered
 });
 
 test("test checkout can be cancelled and unknown sessions are hidden", async ({ page }) => {

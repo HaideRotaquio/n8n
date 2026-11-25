@@ -2,6 +2,7 @@ import "server-only";
 import type { Brand } from "@sb/db";
 import { getDb, listPublishedProducts } from "@sb/db";
 import type { CatalogItem } from "@/designs";
+import { hoverCues } from "./hover-cues";
 import { formatMoney } from "./store";
 
 /** Published products as catalog cards, with the brand's category labels. */
@@ -22,6 +23,7 @@ export async function catalogItems(brand: Brand): Promise<CatalogItem[]> {
       category,
       categoryLabel: category ? (labels.get(category) ?? category.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase())) : null,
       searchText: [...(r.cover?.tags ?? []), r.product.title, r.product.description].join(" ").toLowerCase(),
+      cues: hoverCues(r.cover),
     };
   });
 }

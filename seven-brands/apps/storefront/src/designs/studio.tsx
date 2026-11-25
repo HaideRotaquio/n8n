@@ -1,6 +1,7 @@
 import { renderAnimatedSvg, serialize, type AssetDefinition } from "@sb/asset";
 import Link from "next/link";
 import { LivePreview } from "@/components/live-preview";
+import { HoverSound, SoundToggle } from "@/components/sound";
 import { SignOutButton } from "@/components/sign-out-button";
 import type { CatalogItem, Design, HomeProps, ProductProps, ShellProps } from "./types";
 
@@ -30,6 +31,7 @@ function Shell({ brandName, tagline, signedIn, testMode, children }: ShellProps)
           <nav aria-label="Main" className={`flex flex-wrap items-center gap-5 ${mono}`}>
             <Link href="/" className="hover:text-[var(--color-primary)]">Library</Link>
             <Link href="/help" className="hover:text-[var(--color-primary)]">Help</Link>
+            <SoundToggle look="studio" />
             {signedIn ? (
               <>
                 <Link href="/account" className="hover:text-[var(--color-primary)]">My glyphs</Link>
@@ -63,6 +65,7 @@ function Shell({ brandName, tagline, signedIn, testMode, children }: ShellProps)
 function Module({ item, n }: { item: CatalogItem; n: number }) {
   const cues = item.cover?.sounds.length ?? 0;
   return (
+    <HoverSound cues={item.cues}>
     <Link href={`/products/${item.slug}`} className="group block rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] transition hover:border-[var(--color-primary)] hover:shadow-[0_0_0_1px_var(--color-primary),0_0_24px_-6px_var(--color-primary)]">
       <div className={`flex items-center justify-between border-b border-[var(--color-border)] px-3 py-2 text-[var(--color-muted-text)] ${mono}`}>
         <span>SG-{String(n + 1).padStart(2, "0")}</span>
@@ -78,6 +81,7 @@ function Module({ item, n }: { item: CatalogItem; n: number }) {
       </div>
       {item.kind === "pack" && item.assetCount > 3 && <p className={`px-3 pb-3 text-[var(--color-muted-text)] ${mono}`}>{item.assetCount} glyphs in pack</p>}
     </Link>
+    </HoverSound>
   );
 }
 
@@ -97,11 +101,13 @@ function Home({ tagline, description, items, categories, q, category, freePack, 
             </div>
           </div>
           <div className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[0_0_60px_-20px_var(--color-accent)]">
-            <div className={`mb-3 flex justify-between text-[var(--color-muted-text)] ${mono}`}><span>Rack 01</span><span className="text-[var(--color-primary)]">● live</span></div>
+            <div className={`mb-3 flex justify-between text-[var(--color-muted-text)] ${mono}`}><span>Rack 01 — sound on, then hover to hear</span><span className="text-[var(--color-primary)]">● live</span></div>
             <ul className="grid grid-cols-3 gap-2" aria-label="Featured glyphs">
               {showcase.slice(0, 6).map((it) => (
-                <li key={it.slug} className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
-                  <Link href={`/products/${it.slug}`} aria-label={it.title}>{it.cover && <Art ad={it.cover} playOn="load" className="aspect-square" />}</Link>
+                <li key={it.slug} className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] p-3 hover:border-[var(--color-primary)]">
+                  <HoverSound cues={it.cues} keepPlaying>
+                    <Link href={`/products/${it.slug}`} aria-label={it.title}>{it.cover && <Art ad={it.cover} playOn="load" className="aspect-square" />}</Link>
+                  </HoverSound>
                 </li>
               ))}
             </ul>

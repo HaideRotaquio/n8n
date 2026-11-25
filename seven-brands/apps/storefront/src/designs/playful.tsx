@@ -2,6 +2,7 @@ import { renderAnimatedSvg, serialize, type AssetDefinition } from "@sb/asset";
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { LivePreview } from "@/components/live-preview";
+import { HoverSound, SoundToggle } from "@/components/sound";
 import type { CatalogItem, Design, HomeProps, ProductProps, ShellProps } from "./types";
 
 /**
@@ -29,6 +30,7 @@ function Shell({ brandName, tagline, signedIn, testMode, children }: ShellProps)
         <nav aria-label="Main" className="flex flex-wrap items-center gap-1 rounded-full bg-[var(--color-surface)] p-1 text-sm font-bold shadow-sm ring-1 ring-[var(--color-border)]">
           <Link href="/" className="rounded-full px-4 py-2 hover:bg-[var(--color-accent)]/40">Shop</Link>
           <Link href="/help" className="rounded-full px-4 py-2 hover:bg-[var(--color-accent)]/40">Help</Link>
+          <SoundToggle look="playful" />
           {signedIn ? (
             <>
               <Link href="/account" className="rounded-full px-4 py-2 hover:bg-[var(--color-accent)]/40">Your library</Link>
@@ -63,6 +65,7 @@ function Shell({ brandName, tagline, signedIn, testMode, children }: ShellProps)
 
 function Card({ item, i }: { item: CatalogItem; i: number }) {
   return (
+    <HoverSound cues={item.cues}>
     <Link href={`/products/${item.slug}`} className="group block rounded-[32px] p-3 transition motion-safe:hover:-translate-y-1 motion-safe:hover:rotate-[-1deg]" style={{ background: tint(i) }}>
       <div className="relative aspect-square rounded-[26px] bg-[var(--color-surface)] p-5 shadow-sm">
         {item.cover && <Art ad={item.cover} className="h-full w-full" />}
@@ -74,6 +77,7 @@ function Card({ item, i }: { item: CatalogItem; i: number }) {
         {item.priceLabel && !item.isFree && <span className="shrink-0 text-sm font-bold text-[var(--color-muted-text)]">{item.priceLabel}</span>}
       </div>
     </Link>
+    </HoverSound>
   );
 }
 
@@ -91,11 +95,14 @@ function Home({ tagline, description, items, categories, q, category, freePack, 
               {freePack && <Link href={`/products/${freePack.slug}`} className="rounded-full bg-[var(--color-accent)] px-6 py-3 font-extrabold">Get the free pack</Link>}
             </div>
             <p className="mt-4 text-sm text-[var(--color-muted-text)]">Animated SVG, Lottie, GIF, MP4, WebM, React and Web Components — with sound.</p>
+            <p className="mt-2 text-sm font-bold">Turn 🔇 Sound on (top right), then hover any icon to hear it.</p>
           </div>
           <ul className="grid grid-cols-3 gap-3" aria-label="Featured icons">
             {showcase.slice(0, 6).map((it, i) => (
               <li key={it.slug} className={`rounded-[28px] p-3 ${i % 2 ? "rotate-3" : "-rotate-3"}`} style={{ background: tint(i) }}>
-                <Link href={`/products/${it.slug}`} aria-label={it.title}>{it.cover && <Art ad={it.cover} playOn="load" className="aspect-square" />}</Link>
+                <HoverSound cues={it.cues} keepPlaying>
+                  <Link href={`/products/${it.slug}`} aria-label={it.title}>{it.cover && <Art ad={it.cover} playOn="load" className="aspect-square" />}</Link>
+                </HoverSound>
               </li>
             ))}
           </ul>

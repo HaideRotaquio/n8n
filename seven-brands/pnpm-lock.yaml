@@ -120,6 +120,9 @@ importers:
       '@sb/asset':
         specifier: workspace:*
         version: link:../../packages/asset
+      '@sb/audio':
+        specifier: workspace:*
+        version: link:../../packages/audio
       '@sb/auth':
         specifier: workspace:*
         version: link:../../packages/auth

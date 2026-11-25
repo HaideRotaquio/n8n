@@ -3,6 +3,7 @@
 import { cuePan, cueTime, type AssetDefinition } from "@sb/asset/runtime";
 import { AssetPlayer } from "@sb/player";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSound } from "./sound";
 
 export interface PreviewAsset {
   id: string;
@@ -21,8 +22,9 @@ const styleName = (a: PreviewAsset) => /\(([^)]+)\)$/.exec(a.name)?.[1] ?? a.def
 export function LivePreview({ assets, look, customizer, soundUrls }: { assets: PreviewAsset[]; look: "playful" | "studio"; customizer: boolean; soundUrls?: Record<string, string> }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<AssetPlayer | null>(null);
-  // Keeps the visitor's sound choice when they switch color styles.
-  const mutedRef = useRef(true);
+  // Starts with the site-wide sound switch, and keeps the visitor's choice when they switch color styles.
+  const { enabled: siteSound } = useSound();
+  const mutedRef = useRef(!siteSound);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);

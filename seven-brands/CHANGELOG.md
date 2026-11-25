@@ -2,7 +2,15 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
-## [0.4.2] — 2026-11-25 — Stereo sound placement
+## [0.4.3] — 2026-11-25 — Hover to hear
+
+### Added
+- Storefront "Sound on/off" switch in the header (both designs), remembered per visitor. Off by default; the click on it unlocks audio as browsers require, and on later visits the first click or key press re-unlocks it.
+- With sound on, hovering (or keyboard-focusing) any icon — hero, catalog grid, search results — restarts its animation from the first frame and plays its sounds in sync, including stereo placement. Leaving stops the sound. Cues are pre-resolved on the server, so cards don't ship whole asset definitions.
+- Product-page previews start with sound when the site-wide switch is on.
+- E2E: silent by default, hover plays after switching on, choice remembered.
+
+ — 2026-11-25 — Stereo sound placement
 
 ### Added
 - Sound cues can be placed left/right: a fixed `pan` (−1 left … 1 right) or `panFrom: <layer>` (the sound sits where that layer is on screen when it fires). Equal-power pan law everywhere.
