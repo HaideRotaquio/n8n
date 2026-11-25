@@ -5,9 +5,11 @@ All notable changes to the Seven Brands platform. Dates are UTC.
 ## [0.4.5] — 2026-11-25 — Chibi Cast (original characters)
 
 ### Added
-- Moodicons rig `moodicons-chibi@1`: six original chibi characters — Kai, Amara, Mateo, Tala, Priya and Lena — each with six reactions (happy, laughing, in love, sad, angry, surprised): 36 animated icons with synced sound, all QA 100 and exported in every format, Lottie included.
-- Characters share one face shape and differ only by hair, outfit and skin tone; they are not labelled by nationality. Design rule in the rig: never redraw one to resemble a character from an existing anime, game or comic.
-- Launch plan: a reactions pack per character and a "Chibi Cast Bundle" of all 36.
+- Moodicons rig `moodicons-chibi@1`: six original, streetwear-styled chibi characters, each with a signature look:
+  Kai (street skater, backwards cap and hoodie), Amara (DJ, high puff, bomber and headphones), Mateo (street footballer, curly top, sweatband, striped jersey), Tala (surfer, ocean-blue streak, hibiscus, shell necklace), Priya (gamer, neon streak, headset with mic) and Lena (inventor, messy bob, goggles, lab coat).
+- Seven reactions each — a signature "Cool" (sunglasses drop in with a whoosh and a "shing" glint), happy, laughing, in love, sad, angry, surprised: 42 animated icons with synced sound, all QA 100 and exported in every format, Lottie included.
+- Characters share one face shape and differ by style, hair and skin tone; they are not labelled by nationality. Design rule in the rig: never redraw one to resemble a character from an existing anime, game or comic.
+- Launch plan: a reactions pack per character and a "Chibi Cast Bundle" of all 42.
 
 ## [0.4.4] — 2026-11-25 — Scroll-driven playback
 

@@ -22,7 +22,7 @@ describe("rigs", () => {
   });
   it("starter set covers every rig variant once, each with sound", () => {
     const set = starterSet();
-    expect(set.filter((a) => a.brand === "moodicons")).toHaveLength(65); // 15 faces + 8 stickers + 6 Bawal signs + 36 chibi (6 characters × 6 reactions)
+    expect(set.filter((a) => a.brand === "moodicons")).toHaveLength(71); // 15 faces + 8 stickers + 6 Bawal signs + 42 chibi (6 characters × 7 reactions)
     expect(set.filter((a) => a.brand === "sonicglyphs")).toHaveLength(14);
     expect(set.every((a) => a.sounds.length > 0 && a.provenance.method === "rig")).toBe(true);
   });

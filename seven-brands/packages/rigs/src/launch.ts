@@ -62,7 +62,7 @@ function moodicons(): ProductPlan[] {
     return {
       slug: `chibi-${c}-pack`,
       title: `Chibi ${name} — Reactions Pack`,
-      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (happy, laughing, in love, sad, angry, surprised), each with its own sound. An original Moodicons character.`,
+      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (cool shades drop, happy, laughing, in love, sad, angry, surprised), each with its own sound. An original Moodicons character.`,
       kind: "pack",
       assetSlugs: chibiSlugs(c),
       prices: { personal: 900, commercial: 2900, team: 5900, agency: 11900 },
