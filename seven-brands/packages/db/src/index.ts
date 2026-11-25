@@ -16,3 +16,4 @@ export { CATALOG_STATUSES, PRODUCT_KINDS, PAYMENT_PROVIDERS, ORDER_STATUSES, REF
 export * from "./repositories/sounds";
 export type { SoundAsset } from "./schema";
 export { SOUND_SOURCES } from "./schema";
+export * from "./repositories/developer";

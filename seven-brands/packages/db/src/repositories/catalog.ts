@@ -32,7 +32,7 @@ const SLUG = /^[a-z0-9-]{2,80}$/;
  * The version customers see and download: the newest version a reviewer approved that also has an export
  * package. A newer, unreviewed version never reaches buyers until it is approved and exported.
  */
-const deliverableVersion = (assetId: unknown) => sql<number | null>`(
+export const deliverableVersion = (assetId: unknown) => sql<number | null>`(
   select max(v.version) from asset_version v
   where v.asset_id = ${assetId}
     and exists (select 1 from quality_review q where q.asset_version_id = v.id and q.kind = 'human' and q.decision = 'approved')
