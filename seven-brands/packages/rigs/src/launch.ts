@@ -1,6 +1,6 @@
 import { buildFace, FACE_EXPRESSIONS, FACE_PALETTES, type FacePalette } from "./moodicons-face";
 import { BAWAL_SIGNS, buildBawal } from "./moodicons-bawal";
-import { buildChibi, CHIBI_CHARACTERS, CHIBI_NAMES, CHIBI_REACTIONS } from "./moodicons-chibi";
+import { buildChibi, CHIBI_CHARACTERS, CHIBI_CREW_TITLES, CHIBI_CREWS, CHIBI_NAMES, CHIBI_REACTIONS, chibiCrewMembers } from "./moodicons-chibi";
 import { buildSymbol, SYMBOL_PALETTES, SYMBOLS, type SymbolPalette } from "./moodicons-symbols";
 import { buildGlyph, GLYPH_PALETTES, GLYPHS, type GlyphPalette } from "./sonicglyphs";
 
@@ -62,21 +62,24 @@ function moodicons(): ProductPlan[] {
     return {
       slug: `chibi-${c}-pack`,
       title: `Chibi ${name} — Reactions Pack`,
-      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (cool shades drop, happy, laughing, in love, sad, angry, surprised), each with its own sound. An original Moodicons character.`,
+      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (cool shades drop, power-up aura, happy, laughing, in love, sad, angry, surprised), each with its own sound. An original Moodicons character from the ${CHIBI_CREW_TITLES[CHIBI_NAMES[c].crew]}.`,
       kind: "pack",
       assetSlugs: chibiSlugs(c),
       prices: { personal: 900, commercial: 2900, team: 5900, agency: 11900 },
     };
   });
   return [
-    {
-      slug: "chibi-cast-bundle",
-      title: "Chibi Cast Bundle",
-      description: `The whole original cast: ${CHIBI_CHARACTERS.map((c) => CHIBI_NAMES[c].name).join(", ")} — ${CHIBI_CHARACTERS.length * CHIBI_REACTIONS.length} animated reactions with sound.`,
-      kind: "pack",
-      assetSlugs: CHIBI_CHARACTERS.flatMap(chibiSlugs),
-      prices: MOOD_BUNDLE,
-    },
+    ...CHIBI_CREWS.map((crew): ProductPlan => {
+      const members = chibiCrewMembers(crew);
+      return {
+        slug: `chibi-${crew}-bundle`,
+        title: `Chibi ${CHIBI_CREW_TITLES[crew]} Bundle`,
+        description: `The whole ${CHIBI_CREW_TITLES[crew]}: ${members.map((c) => CHIBI_NAMES[c].name).join(", ")} — ${members.length * CHIBI_REACTIONS.length} animated reactions with sound.`,
+        kind: "pack",
+        assetSlugs: members.flatMap(chibiSlugs),
+        prices: MOOD_BUNDLE,
+      };
+    }),
     ...chibi,
     {
       slug: "bawal-signs-davao-pack",

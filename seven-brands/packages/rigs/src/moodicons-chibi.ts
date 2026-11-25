@@ -2,6 +2,8 @@ import type { AssetDefinition, Layer, SoundCue, Track } from "@sb/asset";
 import { finalize, heartPath, track } from "./util";
 
 /**
+ * Crews are built on anime GENRES (sky pirates, shinobi), never on specific characters: each one's silhouette, colors and
+ * signature item must not match a character from an existing series — see the "never" list above each crew.
  * Moodicons Chibi Cast: an international cast of ORIGINAL, cool chibi characters — each with a strong look of their own
  * (streetwear, gear, a signature accessory) — and big reactions, including a signature "cool" shades drop.
  * Every character is our own design (names, hair, outfits, colors) and must never be redrawn to resemble a character
@@ -10,18 +12,22 @@ import { finalize, heartPath, track } from "./util";
  * 64×64 grid: big head (r 17), small body, 2 px ink outline — matching the other Moodicons rigs.
  */
 
-export const CHIBI_CHARACTERS = ["kai", "amara", "mateo", "tala", "priya", "lena"] as const;
+export const CHIBI_CREWS = ["street", "sky-pirates", "shinobi"] as const;
+export type ChibiCrew = (typeof CHIBI_CREWS)[number];
+export const CHIBI_CREW_TITLES: Record<ChibiCrew, string> = { street: "Street Crew", "sky-pirates": "Sky Pirates", shinobi: "Shinobi Crew" };
+export const CHIBI_CHARACTERS = ["kai", "amara", "mateo", "tala", "priya", "lena", "rook", "isla", "bo", "juno", "rina", "taro", "noor", "bram"] as const;
 export type ChibiCharacter = (typeof CHIBI_CHARACTERS)[number];
-export const CHIBI_REACTIONS = ["cool", "happy", "laughing", "love", "sad", "angry", "surprised"] as const;
+export const CHIBI_REACTIONS = ["cool", "powerup", "happy", "laughing", "love", "sad", "angry", "surprised"] as const;
 export type ChibiReaction = (typeof CHIBI_REACTIONS)[number];
 export const CHIBI_VARIANTS = CHIBI_CHARACTERS.flatMap((c) => CHIBI_REACTIONS.map((r) => `${c}-${r}`));
 
-const SHARED = { ink: "#2B1B12", white: "#FFFFFF", blush: "#FF8FA3", heart: "#E8336D", tear: "#4FC3F7", fire: "#FF5A36" };
+const SHARED = { ink: "#2B1B12", white: "#FFFFFF", blush: "#FF8FA3", heart: "#E8336D", tear: "#4FC3F7", fire: "#FF5A36", aura: "#FFC940", auraCore: "#FFF3B0" };
 
 interface Character {
   name: string;
+  crew: ChibiCrew;
   role: string;
-  tokens: { skin: string; hair: string; outfit: string; accent: string; gear: string };
+  tokens: { skin: string; hair: string; outfit: string; accent: string; gear: string } & Record<string, string>;
   back: Layer[];
   /** Outfit and anything worn around the neck. */
   body: Layer[];
@@ -50,6 +56,7 @@ const torso = (token: string): Layer => shape("body", TORSO, token);
 const CHARACTERS: Record<ChibiCharacter, Character> = {
   kai: {
     name: "Kai",
+    crew: "street",
     role: "the street skater in a backwards cap",
     tokens: { skin: "#F2C8A0", hair: "#1C2541", outfit: "#2F2F3A", accent: "#C6FF00", gear: "#E53935" },
     back: [
@@ -72,6 +79,7 @@ const CHARACTERS: Record<ChibiCharacter, Character> = {
   },
   amara: {
     name: "Amara",
+    crew: "street",
     role: "the DJ with a high puff and headphones",
     tokens: { skin: "#8D5524", hair: "#1F1410", outfit: "#7B2FBE", accent: "#FFB300", gear: "#26C6DA" },
     back: [circle("puff", 32, 10.5, 9.5, "hair", true)],
@@ -92,6 +100,7 @@ const CHARACTERS: Record<ChibiCharacter, Character> = {
   },
   mateo: {
     name: "Mateo",
+    crew: "street",
     role: "the street footballer with a curly top and sweatband",
     tokens: { skin: "#C68642", hair: "#2B1A10", outfit: "#1565C0", accent: "#FFFFFF", gear: "#FF3D00" },
     back: [],
@@ -116,6 +125,7 @@ const CHARACTERS: Record<ChibiCharacter, Character> = {
   },
   tala: {
     name: "Tala",
+    crew: "street",
     role: "the surfer with an ocean-blue streak and a hibiscus",
     tokens: { skin: "#D8A47F", hair: "#141414", outfit: "#FF7043", accent: "#00BFA5", gear: "#FFFFFF" },
     back: [shape("hair-back", "M11 27 Q10 8 32 8 Q54 8 53 27 Q56 38 52 46 Q55 50 50 53 Q46 50 46 44 L45 32 L19 32 L18 44 Q18 50 14 53 Q9 50 12 46 Q8 38 11 27 Z", "hair")],
@@ -146,6 +156,7 @@ const CHARACTERS: Record<ChibiCharacter, Character> = {
   },
   priya: {
     name: "Priya",
+    crew: "street",
     role: "the gamer with a neon streak and headset",
     tokens: { skin: "#B5753F", hair: "#1E1410", outfit: "#263238", accent: "#00E5A0", gear: "#FF4FA3" },
     back: [
@@ -164,6 +175,7 @@ const CHARACTERS: Record<ChibiCharacter, Character> = {
   },
   lena: {
     name: "Lena",
+    crew: "street",
     role: "the inventor with a messy bob and goggles",
     tokens: { skin: "#F1C7A4", hair: "#C8501E", outfit: "#7B5CD6", accent: "#80DEEA", gear: "#FFFFFF" },
     back: [
@@ -184,6 +196,168 @@ const CHARACTERS: Record<ChibiCharacter, Character> = {
           circle("goggle-shine-r", 36, 16, 1.1, "white"),
         ],
       },
+    ],
+  },
+  // ─── Sky Pirates ── original crew; never a straw hat, scar under the eye, three swords or a long nose ───
+  rook: {
+    name: "Rook",
+    crew: "sky-pirates",
+    role: "the sky-pirate captain in a tricorne and long coat",
+    tokens: { skin: "#C9895B", hair: "#EDE6D6", outfit: "#8E1B3A", accent: "#E0B84C", gear: "#1E4D5C" },
+    back: [],
+    body: [
+      torso("outfit"),
+      shape("cravat", "M28.5 45.6 L32 51 L35.5 45.6 Q32 44.8 28.5 45.6 Z", "white", { strokeWidth: 1.4 }),
+      strokeOnly("lapel-l", "M24.5 47 L29.5 63", "accent", 1.6),
+      strokeOnly("lapel-r", "M39.5 47 L34.5 63", "accent", 1.6),
+      circle("button-1", 32, 55, 1.3, "accent", true),
+      circle("button-2", 32, 60, 1.3, "accent", true),
+    ],
+    front: [
+      shape("sideburn-l", "M15.6 20 Q14.6 27 16.6 31.5 L19.5 22 Z", "hair"),
+      shape("sideburn-r", "M48.4 20 Q49.4 27 47.4 31.5 L44.5 22 Z", "hair"),
+      shape("feather", "M41 10 Q49 -0.5 59 1.5 Q53 3.5 51 7 Q48 9.5 44 11.5 Z", "white", { strokeWidth: 1.4 }),
+      shape("tricorne", "M7 17.5 Q14 22 32 20 Q50 22 57 17.5 Q53 6.5 44.5 9.5 Q38.5 2 32 2.5 Q25.5 2 19.5 9.5 Q11 6.5 7 17.5 Z", "gear"),
+      strokeOnly("hat-trim", "M8.5 17 Q15 20.8 32 19 Q49 20.8 55.5 17", "accent", 1.8),
+      { id: "hat-badge", kind: "shape", shape: { type: "polygon", points: "32 7.5 33.3 10.7 36.5 12 33.3 13.3 32 16.5 30.7 13.3 27.5 12 30.7 10.7" }, fill: fill("accent"), stroke: ink, strokeWidth: 1, lineJoin: "round" },
+    ],
+  },
+  isla: {
+    name: "Isla",
+    crew: "sky-pirates",
+    role: "the sky navigator in a leather flight cap and red scarf",
+    tokens: { skin: "#E0AC80", hair: "#3D2A5C", outfit: "#2C3E73", accent: "#D7263D", gear: "#7A4A2A" },
+    back: [shape("scarf-tail", "M40 46 Q50 43 59 48.5 Q56 52 51 51 Q46 50.5 41 51 Z", "accent")],
+    body: [
+      torso("outfit"),
+      strokeOnly("scarf", "M21.5 46.5 Q32 52 42.5 46.5", "accent", 3.6),
+      circle("compass", 32, 56.5, 3, "gear", true),
+      strokeOnly("compass-needle", "M32 54.6 V58.4", "accent", 1.2),
+    ],
+    front: [
+      shape("fringe", "M19 16.5 Q23 23.5 27.5 17 Q31.5 23.5 36 17 Q40.5 23.5 45 16.5 Z", "hair", { strokeWidth: 1.6 }),
+      shape("flight-cap", "M14.5 23 Q14 7.5 32 7.5 Q50 7.5 49.5 23 Q45 16 32 16 Q19 16 14.5 23 Z", "gear"),
+      strokeOnly("cap-seam", "M32 8.5 V15.5", "ink", 1.2),
+      { id: "flap-l", kind: "shape", shape: { type: "rect", x: 12.6, y: 20, width: 5.4, height: 13, rx: 2.4 }, fill: fill("gear"), stroke: ink, strokeWidth: 1.8 },
+      { id: "flap-r", kind: "shape", shape: { type: "rect", x: 46, y: 20, width: 5.4, height: 13, rx: 2.4 }, fill: fill("gear"), stroke: ink, strokeWidth: 1.8 },
+    ],
+  },
+  bo: {
+    name: "Bo",
+    crew: "sky-pirates",
+    role: "the airship mechanic in a polka-dot bandana and overalls",
+    tokens: { skin: "#9C6B43", hair: "#4A2C17", outfit: "#F57C00", accent: "#FFD23F", gear: "#E9E2D0" },
+    back: [],
+    body: [
+      torso("gear"),
+      shape("bib", "M24.5 51 H39.5 V63 H24.5 Z", "outfit", { strokeWidth: 1.6 }),
+      strokeOnly("strap-l", "M25.5 51 L23.5 46.5", "outfit", 2.2),
+      strokeOnly("strap-r", "M38.5 51 L40.5 46.5", "outfit", 2.2),
+      circle("bolt-l", 26.5, 53, 1.1, "accent", true),
+      circle("bolt-r", 37.5, 53, 1.1, "accent", true),
+    ],
+    front: [
+      shape("tuft-l", "M15.3 21.5 Q14.4 27.5 16.2 31 L18.8 22.5 Z", "hair"),
+      shape("tuft-r", "M48.7 21.5 Q49.6 27.5 47.8 31 L45.2 22.5 Z", "hair"),
+      shape("bandana-knot", "M47 17 L55.5 12.5 L54 18.5 L57 23.5 L48.5 21.5 Z", "accent"),
+      shape("bandana", "M14.5 23 Q14 9 32 9 Q50 9 49.5 23 Q40.5 17.5 32 17.5 Q23.5 17.5 14.5 23 Z", "accent"),
+      circle("dot-1", 23.5, 15, 1.1, "white"),
+      circle("dot-2", 32, 12.5, 1.1, "white"),
+      circle("dot-3", 40.5, 15, 1.1, "white"),
+      { id: "freckles", kind: "shape", shape: { type: "path", d: "M19.5 31.2 h0.01 M21.4 32.2 h0.01 M23.3 31.2 h0.01 M40.7 31.2 h0.01 M42.6 32.2 h0.01 M44.5 31.2 h0.01" }, fill: "none", stroke: fill("hair"), strokeWidth: 1.2, lineCap: "round", opacity: 0.6 },
+    ],
+  },
+  juno: {
+    name: "Juno",
+    crew: "sky-pirates",
+    role: "the lookout in a headscarf, hoop earring and sailor stripes",
+    tokens: { skin: "#6B4226", hair: "#1A1A1A", outfit: "#00897B", accent: "#1A237E", gear: "#FFFFFF", trim: "#E0B84C" },
+    back: [shape("scarf-tails", "M15 24 Q6 29 8.5 38.5 Q11 33.5 16.5 30.5 Z", "outfit")],
+    body: [torso("gear"), strokeOnly("stripe-1", "M23 50 H41", "accent", 2), strokeOnly("stripe-2", "M21 55 H43", "accent", 2), strokeOnly("stripe-3", "M20 60 H44", "accent", 2)],
+    front: [
+      circle("curl-l", 15.8, 25, 3.6, "hair", true),
+      circle("curl-r", 48.2, 25, 3.6, "hair", true),
+      shape("headscarf", "M14.5 22.5 Q14 8 32 8 Q50 8 49.5 22.5 Q41 15.5 32 16 Q23 15.5 14.5 22.5 Z", "outfit"),
+      strokeOnly("scarf-edge", "M17 19 Q32 11.5 47 19", "gear", 1.2),
+      { id: "hoop", kind: "shape", shape: { type: "circle", cx: 48.4, cy: 36, r: 3 }, fill: "none", stroke: fill("trim"), strokeWidth: 1.6 },
+    ],
+  },
+  // ─── Shinobi crew ── original crew; never whisker marks, orange jumpsuits, metal-plated headbands or face masks ───
+  rina: {
+    name: "Rina",
+    crew: "shinobi",
+    role: "the smoke-bomb trickster in a tied hood",
+    tokens: { skin: "#F0C9A5", hair: "#5FD3B5", outfit: "#33334D", accent: "#E53950", gear: "#FFB74D" },
+    back: [
+      shape("hood-tail", "M45 11 Q53.5 4 60 9.5 Q55 11 53.5 15.5 Q50 13.5 47.5 16 Z", "outfit"),
+      shape("hood", "M10.5 32 Q9.5 6 32 6 Q54.5 6 53.5 32 Q53.5 42 46 44 L18 44 Q10.5 42 10.5 32 Z", "outfit"),
+    ],
+    body: [
+      torso("outfit"),
+      strokeOnly("neck-wrap", "M21.5 46.5 Q32 52 42.5 46.5", "accent", 3.6),
+      circle("smoke-bomb", 39.5, 57.5, 3, "ink"),
+      strokeOnly("fuse", "M41.5 55.2 Q43 53 44.8 53.4", "gear", 1.4),
+    ],
+    front: [
+      shape("fringe", "M20 17 Q23.5 24.5 27.5 18.5 Q30.5 23.5 34 18 L34 16 L20 16 Z", "hair", { strokeWidth: 1.6 }),
+      shape("hood-rim", "M15 24 Q15 9 32 9 Q49 9 49 24 Q44 16.5 32 16.5 Q20 16.5 15 24 Z", "outfit"),
+    ],
+  },
+  taro: {
+    name: "Taro",
+    crew: "shinobi",
+    role: "the throwing-star prodigy with a long mustard scarf",
+    tokens: { skin: "#D9A27A", hair: "#2E5E4E", outfit: "#2E3B4E", accent: "#E8A33D", gear: "#E9E2D0" },
+    back: [shape("hair-back", "M14 28 Q12 8 32 8 Q52 8 50 28 Z", "hair"), shape("scarf-tail", "M41 46.5 Q52 45 59.5 51.5 Q55.5 55 50.5 53 Q46 51 41 51.5 Z", "accent")],
+    body: [
+      torso("outfit"),
+      strokeOnly("scarf", "M21.5 46.5 Q32 52 42.5 46.5", "accent", 4),
+      { id: "emblem", kind: "shape", shape: { type: "polygon", points: "32 52 33.4 55.6 37 57 33.4 58.4 32 62 30.6 58.4 27 57 30.6 55.6" }, fill: fill("gear"), stroke: ink, strokeWidth: 1, lineJoin: "round" },
+    ],
+    front: [
+      shape("hair-front", "M15 25 Q13 9 32 9 Q50 9 49 22 Q46 16.5 40.5 17.5 Q36.5 13.5 30.5 19.5 Q26.5 14.5 22 20.5 Q18.5 18.5 15 25 Z", "hair"),
+      { id: "cheek-plaster", kind: "shape", shape: { type: "path", d: "M41.6 37.2 L45.8 35.2 L46.8 37.2 L42.6 39.2 Z" }, fill: fill("gear"), stroke: ink, strokeWidth: 1, lineJoin: "round" },
+    ],
+  },
+  noor: {
+    name: "Noor",
+    crew: "shinobi",
+    role: "the scroll-keeper with a high bun and hair sticks",
+    tokens: { skin: "#C48A5C", hair: "#1B1B2F", outfit: "#00695C", accent: "#9C6ADE", gear: "#F3E5C0", wood: "#B5835A" },
+    back: [
+      shape("scroll", "M40 41 L49.5 37 L56.5 52 L47 56 Z", "gear"),
+      strokeOnly("scroll-end", "M48.5 36.2 L50.6 37.8", "wood", 3),
+      strokeOnly("stick-1", "M25 1.5 L37 12.5", "wood", 1.8),
+      strokeOnly("stick-2", "M39 1.5 L27 12.5", "wood", 1.8),
+      circle("bun", 32, 7.5, 6, "hair", true),
+    ],
+    body: [torso("outfit"), strokeOnly("sash", "M19.6 56 Q32 59 44.4 56", "accent", 3), strokeOnly("collar-l", "M26.5 45.6 L33.5 54", "gear", 1.8), strokeOnly("collar-r", "M37.5 45.6 L32 51.5", "gear", 1.8)],
+    front: [
+      strokeOnly("lock-l", "M16.5 23 Q15 31.5 17.5 39", "hair", 3),
+      strokeOnly("lock-r", "M47.5 23 Q49 31.5 46.5 39", "hair", 3),
+      shape("hair-front", "M15 25 Q15 10 32 10 Q49 10 49 25 Q41 16 32 17 Q23 16 15 25 Z", "hair"),
+    ],
+  },
+  bram: {
+    name: "Bram",
+    crew: "shinobi",
+    role: "the wandering mentor in a woven travel hat and prayer beads",
+    tokens: { skin: "#E8B98F", hair: "#9E9E9E", outfit: "#283593", accent: "#8D6E63", gear: "#D8B26E" },
+    back: [],
+    body: [
+      torso("outfit"),
+      strokeOnly("collar-l", "M26 45.6 L34 56", "white", 2),
+      strokeOnly("collar-r", "M38 45.6 L32 53", "white", 2),
+      ...[22.5, 26.5, 30.5, 34.5, 38.5, 42].map((x, i) => circle(`bead-${i + 1}`, x, 50.6 - Math.abs(32.2 - x) * 0.25, 1.5, "accent", true)),
+    ],
+    front: [
+      shape("side-hair-l", "M15.4 19 Q14.5 26 16.4 30 L19.2 21 Z", "hair"),
+      shape("side-hair-r", "M48.6 19 Q49.5 26 47.6 30 L44.8 21 Z", "hair"),
+      shape("travel-hat", "M3.5 18.5 L32 2.5 L60.5 18.5 Q32 23 3.5 18.5 Z", "gear"),
+      strokeOnly("weave-1", "M17.5 11 L20 20", "ink", 0.8),
+      strokeOnly("weave-2", "M24.5 7 L26 21", "ink", 0.8),
+      strokeOnly("weave-3", "M39.5 7 L38 21", "ink", 0.8),
+      strokeOnly("weave-4", "M46.5 11 L44 20", "ink", 0.8),
     ],
   },
 };
@@ -213,6 +387,8 @@ interface Reaction {
   markers: { id: string; at: number }[];
   sounds: SoundCue[];
   reducedMotionFrame: number;
+  /** Drawn behind the whole character (auras). */
+  behind?: Layer[];
 }
 
 function reaction(r: ChibiReaction): Reaction {
@@ -250,6 +426,50 @@ function reaction(r: ChibiReaction): Reaction {
         sounds: [
           { id: "drop", sound: "synth:whoosh", marker: "drop", gain: 0.6, params: { pitch: 1.4 } },
           { id: "shing", sound: "synth:chime", marker: "shing", gain: 0.7, params: { pitch: 1.6 }, panFrom: "glint" },
+        ],
+        reducedMotionFrame: 600,
+      };
+    case "powerup":
+      return {
+        label: "powering up in a blazing aura",
+        behind: [
+          {
+            id: "aura",
+            kind: "group",
+            origin: [32, 34],
+            children: [
+              { id: "aura-outer", kind: "shape", shape: { type: "path", d: "M32 0 Q37 6 42 2.5 Q44 9 50.5 7 Q50 14 57 15 Q52.5 22 58 28.5 Q52 31.5 54.5 39 Q50 44 52 50 L12 50 Q14 44 9.5 39 Q12 31.5 6 28.5 Q11.5 22 7 15 Q14 14 13.5 7 Q20 9 22 2.5 Q27 6 32 0 Z" }, fill: fill("aura"), opacity: 0.75 },
+              { id: "aura-inner", kind: "shape", shape: { type: "path", d: "M32 5 Q36 10 40 7.5 Q41.5 13 47 12 Q46.5 18 52 20 Q48.5 26 52.5 31 Q48 35 49.5 42 L14.5 42 Q16 35 11.5 31 Q15.5 26 12 20 Q17.5 18 17 12 Q22.5 13 24 7.5 Q28 10 32 5 Z" }, fill: fill("auraCore"), opacity: 0.9 },
+            ],
+          },
+          {
+            id: "speed-lines",
+            kind: "group",
+            children: [
+              { id: "speed-1", kind: "shape", shape: { type: "path", d: "M2 40 L7 37 M1 48 L7 46 M3 56 L8 53 M62 40 L57 37 M63 48 L57 46 M61 56 L56 53" }, fill: "none", stroke: fill("aura"), strokeWidth: 1.8, lineCap: "round" },
+            ],
+          },
+        ],
+        face: [
+          eye("eye-l", 26),
+          eye("eye-r", 38),
+          line("brow-l", "M22.8 24.6 L28.6 26.4", 2.2),
+          line("brow-r", "M41.2 24.6 L35.4 26.4", 2.2),
+          { id: "mouth", kind: "shape", shape: { type: "path", d: "M28.5 35 H35.5 Q35 39 32 39 Q29 39 28.5 35 Z" }, fill: ink, stroke: ink, strokeWidth: 1.2, lineJoin: "round" },
+          { id: "teeth", kind: "shape", shape: { type: "path", d: "M29.4 35.4 H34.6 V36.6 H29.4 Z" }, fill: fill("white") },
+        ],
+        duration: 1400,
+        markers: [{ id: "charge", at: 0 }, { id: "burst", at: 220 }],
+        tracks: [
+          track("aura", "opacity", [[0, 0, "easeOut"], [220, 1], [1100, 1, "easeIn"], [1400, 0]]),
+          track("aura", "scale", [[0, 0.8, "easeOut"], [220, 1.06, "easeInOut"], [420, 0.97, "easeInOut"], [620, 1.05, "easeInOut"], [820, 0.97, "easeInOut"], [1020, 1.04, "easeIn"], [1400, 0.8]]),
+          track("speed-lines", "opacity", [[0, 0], [180, 0, "easeOut"], [260, 1], [950, 1, "easeIn"], [1150, 0], [1400, 0]]),
+          track("speed-lines", "translateY", [[0, 4], [180, 4, "easeOut"], [700, -4], [1150, -8], [1400, 4]]),
+          track("char", "translateX", [[0, 0], [220, 0], [270, -0.8], [320, 0.8], [370, -0.8], [420, 0.8], [470, -0.5], [520, 0], [1400, 0]]),
+        ],
+        sounds: [
+          { id: "charge", sound: "synth:whoosh", marker: "charge", gain: 0.6, params: { pitch: 0.6, decay: 1.4 } },
+          { id: "burst", sound: "synth:kick", marker: "burst", gain: 0.8, params: { pitch: 0.8 } },
         ],
         reducedMotionFrame: 600,
       };
@@ -348,7 +568,7 @@ function reaction(r: ChibiReaction): Reaction {
   }
 }
 
-const REACTION_TITLE: Record<ChibiReaction, string> = { cool: "Cool", happy: "Happy", laughing: "Laughing", love: "In Love", sad: "Sad", angry: "Angry", surprised: "Surprised" };
+const REACTION_TITLE: Record<ChibiReaction, string> = { cool: "Cool", powerup: "Power-Up", happy: "Happy", laughing: "Laughing", love: "In Love", sad: "Sad", angry: "Angry", surprised: "Surprised" };
 
 export function buildChibi({ character, reaction: r }: { character: ChibiCharacter; reaction: ChibiReaction }): AssetDefinition {
   const c = CHARACTERS[character];
@@ -361,7 +581,7 @@ export function buildChibi({ character, reaction: r }: { character: ChibiCharact
     name: `${c.name} — ${REACTION_TITLE[r]}`,
     viewBox: [0, 0, 64, 64],
     tokens: { ...SHARED, ...c.tokens },
-    layers: [{ id: "char", kind: "group", origin: [32, 62], children: [...c.back, ...c.body, head, ...c.front, ...x.face] }],
+    layers: [{ id: "char", kind: "group", origin: [32, 62], children: [...(x.behind ?? []), ...c.back, ...c.body, head, ...c.front, ...x.face] }],
     timeline: { duration: x.duration, loop: true, tracks: x.tracks, markers: x.markers },
     sounds: x.sounds,
     interactions: [
@@ -369,7 +589,7 @@ export function buildChibi({ character, reaction: r }: { character: ChibiCharact
       { on: "click", action: "restart" },
     ],
     a11y: { label: `${c.name}, ${c.role}, ${x.label}`, reducedMotionFrame: x.reducedMotionFrame },
-    tags: ["chibi", "character", "cool", c.name.toLowerCase(), r, "original"],
+    tags: ["chibi", "character", "anime-style", c.crew, c.name.toLowerCase(), r, "original"],
     category: "characters",
     provenance: { method: "rig", rig: "moodicons-chibi@1" },
   });
@@ -382,6 +602,8 @@ export function parseChibiVariant(v: string): { character: ChibiCharacter; react
   return { character, reaction };
 }
 
-export const CHIBI_NAMES: Record<ChibiCharacter, { name: string; role: string }> = Object.fromEntries(
-  CHIBI_CHARACTERS.map((k) => [k, { name: CHARACTERS[k].name, role: CHARACTERS[k].role }]),
-) as Record<ChibiCharacter, { name: string; role: string }>;
+export const CHIBI_NAMES: Record<ChibiCharacter, { name: string; role: string; crew: ChibiCrew }> = Object.fromEntries(
+  CHIBI_CHARACTERS.map((k) => [k, { name: CHARACTERS[k].name, role: CHARACTERS[k].role, crew: CHARACTERS[k].crew }]),
+) as Record<ChibiCharacter, { name: string; role: string; crew: ChibiCrew }>;
+
+export const chibiCrewMembers = (crew: ChibiCrew): ChibiCharacter[] => CHIBI_CHARACTERS.filter((c) => CHARACTERS[c].crew === crew);

@@ -2,6 +2,18 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.4.6] — 2026-11-25 — Chibi crews: Sky Pirates and Shinobi
+
+### Added
+- Two new original crews built on anime genres (not on any existing series' characters), 4 characters each:
+  - **Sky Pirates:** Rook (captain, tricorne and long coat), Isla (navigator, leather flight cap and red scarf), Bo (airship mechanic, polka-dot bandana and overalls), Juno (lookout, headscarf, hoop earring, sailor stripes).
+  - **Shinobi Crew:** Rina (smoke-bomb trickster in a tied hood), Taro (throwing-star prodigy with a long scarf), Noor (scroll-keeper with a bun and hair sticks), Bram (wandering mentor in a woven travel hat and prayer beads).
+- The original six are now the **Street Crew**.
+- New anime-style reaction for every character, **Power-Up**: a blazing aura and rising speed lines, with a whoosh and a bass hit.
+- 14 characters × 8 reactions = 112 chibi icons, all QA 100.
+- Launch plan: a pack per character and one bundle per crew (the 100-icons-per-pack limit rules out an all-crews bundle).
+- Each crew has a written "never" list in the rig, naming the signature traits of famous series characters that the designs must avoid.
+
 ## [0.4.5] — 2026-11-25 — Chibi Cast (original characters)
 
 ### Added
