@@ -2,6 +2,13 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.4.8] — 2026-11-25 — Kasanagi crew
+
+### Added
+- **Kasanagi: The Seven Paths** chibi crew from the owner's own universe — heroes Awan, Saliha, Dumalag, Bantug, Aria, Landong, Ngil-ad and Karum, and the Obsidian Circle (Ira, Vorak, Zeph, Datus): 12 characters × 8 reactions = 96 icons with sound, QA 100, one pack per character and a crew bundle.
+- Canon adapted so nothing follows an existing series (sun emblem, Pulse Arts, Anito Gifts, Diwa, Wind-Step, sampaguita); see `docs/KASANAGI.md`.
+- Chibi total: 34 characters in 6 crews, 272 icons.
+
 ## [0.4.7] — 2026-11-25 — Chibi crews: Blade Hunters and Adventurers' Guild
 
 ### Added

@@ -12,10 +12,10 @@ import { finalize, heartPath, track } from "./util";
  * 64×64 grid: big head (r 17), small body, 2 px ink outline — matching the other Moodicons rigs.
  */
 
-export const CHIBI_CREWS = ["street", "sky-pirates", "shinobi", "blade-hunters", "guild"] as const;
+export const CHIBI_CREWS = ["street", "sky-pirates", "shinobi", "blade-hunters", "guild", "kasanagi"] as const;
 export type ChibiCrew = (typeof CHIBI_CREWS)[number];
-export const CHIBI_CREW_TITLES: Record<ChibiCrew, string> = { street: "Street Crew", "sky-pirates": "Sky Pirates", shinobi: "Shinobi Crew", "blade-hunters": "Blade Hunters", guild: "Adventurers' Guild" };
-export const CHIBI_CHARACTERS = ["kai", "amara", "mateo", "tala", "priya", "lena", "rook", "isla", "bo", "juno", "rina", "taro", "noor", "bram", "lio", "vera", "sage", "brix", "pip", "mira", "ezra", "kofi"] as const;
+export const CHIBI_CREW_TITLES: Record<ChibiCrew, string> = { street: "Street Crew", "sky-pirates": "Sky Pirates", shinobi: "Shinobi Crew", "blade-hunters": "Blade Hunters", guild: "Adventurers' Guild", kasanagi: "Kasanagi: The Seven Paths" };
+export const CHIBI_CHARACTERS = ["kai", "amara", "mateo", "tala", "priya", "lena", "rook", "isla", "bo", "juno", "rina", "taro", "noor", "bram", "lio", "vera", "sage", "brix", "pip", "mira", "ezra", "kofi", "awan", "saliha", "dumalag", "bantug", "aria", "landong", "ngilad", "karum", "ira", "vorak", "zeph", "datus"] as const;
 export type ChibiCharacter = (typeof CHIBI_CHARACTERS)[number];
 export const CHIBI_REACTIONS = ["cool", "powerup", "happy", "laughing", "love", "sad", "angry", "surprised"] as const;
 export type ChibiReaction = (typeof CHIBI_REACTIONS)[number];
@@ -525,6 +525,203 @@ const CHARACTERS: Record<ChibiCharacter, Character> = {
       shape("cap", "M15.5 19 Q15 6 32 6.5 Q49 6 48.5 19 Z", "gear"),
       shape("visor", "M15 18.5 Q32 15.5 49 18.5 Q46.5 23.5 32 21.5 Q17.5 23.5 15 18.5 Z", "hair"),
       { id: "cap-badge", kind: "shape", shape: { type: "polygon", points: "32 8.6 33.2 11.6 36.4 11.8 33.9 13.8 34.8 16.8 32 15.1 29.2 16.8 30.1 13.8 27.6 11.8 30.8 11.6" }, fill: fill("accent"), stroke: ink, strokeWidth: 1.2, lineJoin: "round" },
+    ],
+  },
+  // ─── Kasanagi: The Seven Paths ── the owner's own universe, adapted so nothing follows an existing series:
+  //     sun emblem (not a spiral crest), Pulse Arts (not "breathing"), Anito Gifts, Diwa, no forehead headbands,
+  //     sampaguita instead of cherry blossoms, wind-step instead of a stretching body ───
+  awan: {
+    name: "Awan",
+    crew: "kasanagi",
+    role: "the trailblazer of Kasanagi in a red cloak with a sun clasp",
+    tokens: { skin: "#C68B5E", hair: "#2A1B14", outfit: "#B3261E", accent: "#F2C14E", gear: "#3B3B44", mark: "#7A2E1E" },
+    back: [{ id: "hair-back", kind: "shape", shape: { type: "polygon", points: "13 30 9 17 17 19 18 7 26 13 31 3 37 12 45 6 46 17 55 15 51 30" }, fill: fill("hair"), stroke: ink, strokeWidth: 2, lineJoin: "round" }],
+    body: [
+      torso("gear"),
+      shape("cloak-l", "M16 63 Q15 48 22 45.5 L27 49 L23 63 Z", "outfit"),
+      shape("cloak-r", "M48 63 Q49 48 42 45.5 L37 49 L41 63 Z", "outfit"),
+      strokeOnly("cloak-wrap", "M21.5 46.5 Q32 52 42.5 46.5", "outfit", 4),
+      { id: "sun-clasp", kind: "shape", shape: { type: "polygon", points: "32 47.6 33 50 35.4 49.6 34 51.6 35.4 53.6 33 53.2 32 55.6 31 53.2 28.6 53.6 30 51.6 28.6 49.6 31 50" }, fill: fill("accent"), stroke: ink, strokeWidth: 1, lineJoin: "round" },
+    ],
+    front: [
+      shape("hair-front", "M15 24 Q14 9 32 9 Q50 9 49 24 L45 17 L41 22 L37 15 L33 21 L29 15 L25 22 L21 17 Z", "hair"),
+      strokeOnly("cheek-mark", "M17.6 30.5 L19.8 32.6 L17.6 34.7", "mark", 1.3),
+    ],
+  },
+  saliha: {
+    name: "Saliha",
+    crew: "kasanagi",
+    role: "the Pulse Arts swordswoman with sampaguita in her hair",
+    tokens: { skin: "#D9A47E", hair: "#1A1414", outfit: "#7A1F2B", accent: "#E9C46A", gear: "#8A8F99", flower: "#FFFFFF" },
+    back: [
+      strokeOnly("grip-outline", "M46 47 L55.5 35", "ink", 4.8),
+      strokeOnly("grip", "M46 47 L55.5 35", "gear", 2.6),
+      strokeOnly("crossguard", "M47.6 37.6 L53.8 42.4", "accent", 2.6),
+      shape("hair-back", "M11 27 Q10 8 32 8 Q54 8 53 27 L54 52 Q49 55 45 51 L45 32 L19 32 L19 51 Q15 55 10 52 Z", "hair"),
+    ],
+    body: [torso("outfit"), strokeOnly("collar-l", "M26.5 45.6 L33.5 54", "accent", 1.8), strokeOnly("collar-r", "M37.5 45.6 L32 51.5", "accent", 1.8), strokeOnly("obi", "M19.6 57 Q32 60 44.4 57", "accent", 3)],
+    front: [
+      shape("hair-front", "M15 25 Q15 10 32 10 Q49 10 49 25 Q44 16 33 17 Q22 17 15 25 Z", "hair"),
+      ...([[19, 15.5], [22.4, 13], [17.6, 19]] as const).flatMap(([x, y], i) => [circle(`sampaguita-${i + 1}`, x, y, 1.9, "flower", true), circle(`sampaguita-${i + 1}-c`, x, y, 0.6, "accent")]),
+    ],
+  },
+  dumalag: {
+    name: "Dumalag",
+    crew: "kasanagi",
+    role: "the strategist who reads intentions through Diwa",
+    tokens: { skin: "#E2B48C", hair: "#2E4A62", outfit: "#1E2A44", accent: "#7FD1E8", gear: "#C9D6E3" },
+    back: [shape("hood", "M10.5 34 Q9.5 7 32 7 Q54.5 7 53.5 34 Q52 44 46 45 L18 45 Q12 44 10.5 34 Z", "outfit")],
+    body: [
+      torso("outfit"),
+      strokeOnly("collar", "M21.5 46.5 Q32 52 42.5 46.5", "gear", 2),
+      shape("eye-pendant", "M27.5 55.5 Q32 51.5 36.5 55.5 Q32 59.5 27.5 55.5 Z", "accent", { strokeWidth: 1.2 }),
+      circle("eye-pendant-pupil", 32, 55.5, 1.1, "ink"),
+    ],
+    front: [shape("hair-front", "M15 26 Q14 10 32 10 Q50 10 49 22 Q43 15 34 17 Q24 19 15 26 Z", "hair")],
+  },
+  bantug: {
+    name: "Bantug",
+    crew: "kasanagi",
+    role: "the free spirit who moves with Wind-Step",
+    tokens: { skin: "#B57B4E", hair: "#3A2416", outfit: "#E07A2E", accent: "#7FD1C1", gear: "#F2E8D5" },
+    back: [
+      { id: "hair-back", kind: "shape", shape: { type: "polygon", points: "12 31 7 20 15 20 13 8 23 13 27 2 34 10 41 3 44 13 52 9 50 21 57 22 52 31" }, fill: fill("hair"), stroke: ink, strokeWidth: 2, lineJoin: "round" },
+      shape("sash-tail", "M40 46 Q50 43 59 48.5 Q56 52 51 51 Q46 50.5 41 51 Z", "accent"),
+    ],
+    body: [
+      torso("gear"),
+      shape("vest-l", "M19.6 60 Q19.5 46 27 45.6 L29 63 L19.4 63 Z", "outfit", { strokeWidth: 1.8 }),
+      shape("vest-r", "M44.4 60 Q44.5 46 37 45.6 L35 63 L44.6 63 Z", "outfit", { strokeWidth: 1.8 }),
+      strokeOnly("wind-sash", "M21.5 46.5 Q32 52 42.5 46.5", "accent", 3.6),
+      strokeOnly("wind-mark", "M30 57.5 Q32.5 54 35 56.5 Q33.5 59 31.5 57.8", "ink", 1.2),
+    ],
+    front: [shape("hair-front", "M15 24 Q14 10 32 9 Q50 10 49 24 L46 18 L42 23 L38 16 L34 22 L30 15 L26 22 L22 17 L18 22 Z", "hair")],
+  },
+  aria: {
+    name: "Aria",
+    crew: "kasanagi",
+    role: "the empath of Resonance with beaded braids and blue face paint",
+    tokens: { skin: "#D9A27A", hair: "#E8E6EF", outfit: "#2F5D8A", accent: "#4E7FD9", gear: "#C1683C" },
+    back: [
+      shape("hair-back", "M11 27 Q10 8 32 8 Q54 8 53 27 Q56 40 51 50 L45 46 L45 32 L19 32 L19 46 L13 50 Q8 40 11 27 Z", "hair"),
+      strokeOnly("braid", "M15.5 31 Q13 41 15 50", "hair", 3),
+      circle("braid-bead-1", 14.3, 40, 1.6, "gear", true),
+      circle("braid-bead-2", 14.6, 45.5, 1.6, "accent", true),
+    ],
+    body: [torso("outfit"), ...[24, 28, 32, 36, 40].map((x, i) => circle(`necklace-${i + 1}`, x, 49.6 + (Math.abs(32 - x) < 1 ? 1.4 : Math.abs(32 - x) < 5 ? 0.9 : 0), 1.4, i % 2 ? "accent" : "gear", true))],
+    front: [
+      shape("hair-front", "M15 25 Q15 9 32 9 Q49 9 49 25 Q46 15 38 16 L36 19 L33 15.5 Q22 15 15 25 Z", "hair"),
+      strokeOnly("face-paint", "M44.6 24.5 Q47.2 28.5 45.2 33", "accent", 1.6),
+    ],
+  },
+  landong: {
+    name: "Landong",
+    crew: "kasanagi",
+    role: "the scholar of Knowledge Seals with a green cloak and an old book",
+    tokens: { skin: "#F0C8A0", hair: "#D9B45A", outfit: "#3E5E3A", accent: "#B98B4E", gear: "#F2EAD3" },
+    back: [],
+    body: [
+      torso("outfit"),
+      strokeOnly("cloak-cord", "M21.5 46.5 Q32 51 42.5 46.5", "accent", 2),
+      { id: "book", kind: "shape", shape: { type: "rect", x: 34, y: 52, width: 8, height: 9.5, rx: 1 }, fill: fill("gear"), stroke: ink, strokeWidth: 1.4 },
+      strokeOnly("book-spine", "M35.6 52.6 V60.9", "accent", 1.2),
+    ],
+    front: [shape("hair-front", "M15 24 Q14 9 32 9 Q50 9 49 24 Q45 16 39 18 Q35 13 29 17.5 Q24 14 20 19 Q17 19 15 24 Z", "hair")],
+    over: [
+      { id: "lens-l", kind: "shape", shape: { type: "rect", x: 21.4, y: 25.8, width: 9.2, height: 6.6, rx: 1.6 }, fill: "none", stroke: ink, strokeWidth: 1.5 },
+      { id: "lens-r", kind: "shape", shape: { type: "rect", x: 33.4, y: 25.8, width: 9.2, height: 6.6, rx: 1.6 }, fill: "none", stroke: ink, strokeWidth: 1.5 },
+      { id: "glasses-bridge", kind: "shape", shape: { type: "path", d: "M30.6 28.4 H33.4" }, fill: "none", stroke: ink, strokeWidth: 1.5, lineCap: "round" },
+    ],
+  },
+  ngilad: {
+    name: "Ngil-ad",
+    crew: "kasanagi",
+    role: "the bearded guardian of Titan Frame in a fur mantle",
+    tokens: { skin: "#8A5534", hair: "#1E1814", outfit: "#6B4A2E", accent: "#A0522D", gear: "#3A4A3A" },
+    back: [shape("hair-back", "M12 32 Q8 10 32 7 Q56 10 52 32 Q56 36 50 40 L14 40 Q8 36 12 32 Z", "hair")],
+    body: [
+      torso("gear"),
+      shape("mantle", "M17 52 Q16 44 25 44.5 Q32 48 39 44.5 Q48 44 47 52 Q40 49 32 50 Q24 49 17 52 Z", "outfit"),
+      ...([[23, 51], [27.5, 52.3], [32, 52.8], [36.5, 52.3], [41, 51]] as const).map(([x, y], i) => circle(`bead-${i + 1}`, x, y, 2.1, "accent", true)),
+    ],
+    front: [
+      shape("hair-front", "M15 24 Q14 9 32 9 Q50 9 49 24 Q44 17 32 17 Q20 17 15 24 Z", "hair"),
+      shape("beard", "M16 31 Q16 46 32 47.5 Q48 46 48 31 Q46 38 42 40.5 Q32 43.5 22 40.5 Q18 38 16 31 Z", "hair"),
+      shape("moustache", "M27 34.6 Q32 32.4 37 34.6 Q35 36 32 35.2 Q29 36 27 34.6 Z", "hair", { strokeWidth: 1.2 }),
+    ],
+  },
+  karum: {
+    name: "Karum",
+    crew: "kasanagi",
+    role: "the usurper with red war marks and a fur collar",
+    tokens: { skin: "#A86A44", hair: "#121016", outfit: "#5A1E1E", accent: "#D23A3A", gear: "#6E5A48" },
+    back: [shape("hair-back", "M11 28 Q10 8 32 8 Q54 8 53 28 L55 55 Q50 57 46 52 L45 32 L19 32 L18 52 Q14 57 9 55 Z", "hair")],
+    body: [torso("outfit"), shape("fur-collar", "M17 52 Q15 44.5 24.5 44.5 Q32 48 39.5 44.5 Q49 44.5 47 52 Q40 48.5 32 50 Q24 48.5 17 52 Z", "gear")],
+    front: [
+      shape("hair-front", "M15 26 Q15 9 32 9 Q49 9 49 26 Q45 15 32.5 13 Q19 15 15 26 Z", "hair"),
+      strokeOnly("war-mark-1", "M18.6 31.5 L22 35.5", "accent", 1.4),
+      strokeOnly("war-mark-2", "M20.8 30.6 L24.2 34.6", "accent", 1.4),
+    ],
+  },
+  ira: {
+    name: "Ira",
+    crew: "kasanagi",
+    role: "the witch of Hollow Blood from the Obsidian Circle",
+    tokens: { skin: "#E9C9B5", hair: "#D9D0EE", outfit: "#3A1F4F", accent: "#C2185B", gear: "#1C1024" },
+    back: [shape("hair-back", "M11 27 Q10 8 32 8 Q54 8 53 27 L54 56 Q49 58 45 53 L45 32 L19 32 L19 53 Q15 58 10 56 Z", "hair")],
+    body: [torso("outfit"), shape("collar", "M20 50 L21.5 42.5 L27 46.5 Q32 48 37 46.5 L42.5 42.5 L44 50 Q32 53 20 50 Z", "gear"), circle("collar-gem", 32, 52, 1.6, "accent", true)],
+    front: [
+      shape("hair-front", "M15 25 Q15 9 32 9 Q49 9 49 25 Q44 16 32 16.5 Q20 16 15 25 Z", "hair"),
+      strokeOnly("circlet", "M16 19.5 Q32 13.5 48 19.5", "gear", 1.8),
+      shape("circlet-gem", "M32 15 L34 17.6 L32 20.6 L30 17.6 Z", "accent", { strokeWidth: 1 }),
+    ],
+  },
+  vorak: {
+    name: "Vorak",
+    crew: "kasanagi",
+    role: "the hunter lord of the Obsidian Circle with a fang necklace",
+    tokens: { skin: "#B98A63", hair: "#1B1B1B", outfit: "#33402F", accent: "#EDE3C8", gear: "#5C4636" },
+    back: [{ id: "hair-back", kind: "shape", shape: { type: "polygon", points: "13 32 9 22 13 20 10 12 18 14 20 6 27 10 32 4 37 10 44 6 46 14 54 12 51 20 55 22 51 32" }, fill: fill("hair"), stroke: ink, strokeWidth: 2, lineJoin: "round" }],
+    body: [
+      torso("outfit"),
+      shape("fur", "M17 53 Q14 45 24 44.5 Q32 48.5 40 44.5 Q50 45 47 53 Q44 48.5 40 51 Q36 48 32 51.5 Q28 48 24 51 Q20 48.5 17 53 Z", "gear"),
+      ...([[27.2, 52.4], [32, 53.4], [36.8, 52.4]] as const).map(([x, y], i): Layer => ({ id: `fang-${i + 1}`, kind: "shape", shape: { type: "polygon", points: `${x - 1.3} ${y} ${x} ${y + 3.8} ${x + 1.3} ${y}` }, fill: fill("accent"), stroke: ink, strokeWidth: 1, lineJoin: "round" })),
+    ],
+    front: [
+      { id: "stubble", kind: "shape", shape: { type: "path", d: "M18.5 33 Q20 44 32 44 Q44 44 45.5 33 Q44 40.5 32 41 Q20 40.5 18.5 33 Z" }, fill: fill("hair"), opacity: 0.35 },
+      shape("hair-front", "M15 24 Q14 10 32 10 Q50 10 49 24 L46 19 L42 22.5 L39 17 L35 21 L32 16 L29 21 L25 17 L22 22.5 L18 19 Z", "hair"),
+    ],
+  },
+  zeph: {
+    name: "Zeph",
+    crew: "kasanagi",
+    role: "the aura collector of the Obsidian Circle with blazing hair and stolen orbs",
+    tokens: { skin: "#EAC6A8", hair: "#FF6A2B", outfit: "#1A1A22", accent: "#FFD23F", gear: "#7C4DFF", orb: "#2EC4B6", orb2: "#FF4F8B" },
+    back: [
+      shape("flame-hair", "M14 26 Q8 14 16 12 Q14 4 22 6 Q24 -1 31 3 Q36 -2 40 5 Q48 2 47 11 Q56 12 50 26 Z", "hair"),
+      shape("flame-core", "M20 15 Q22 8 26 10.5 Q29 4.5 33 8.5 Q37 5 39 11 Q44 10 43 15 Z", "accent", { strokeWidth: 1.2 }),
+    ],
+    body: [torso("outfit"), circle("orb-1", 12.5, 46, 2.6, "gear", true), circle("orb-2", 51.5, 44, 2.4, "orb", true), circle("orb-3", 8.5, 38, 1.8, "orb2", true)],
+    front: [shape("hair-front", "M15 24 Q16 11 32 10 Q48 11 49 24 L44 18 L40 22 L36 16 L32 21 L28 16 L24 22 L20 18 Z", "hair")],
+  },
+  datus: {
+    name: "Datus",
+    crew: "kasanagi",
+    role: "the false prophet of the Obsidian Circle in a putong headwrap and white robe",
+    tokens: { skin: "#C08A5C", hair: "#141414", outfit: "#F2EAD8", accent: "#D4A017", gear: "#5B2C83", putong: "#9E1B1B" },
+    back: [shape("hair-back", "M12 28 Q11 9 32 9 Q53 9 52 28 L53 48 Q48 51 45 46 L45 32 L19 32 L19 46 Q16 51 11 48 Z", "hair")],
+    body: [
+      torso("outfit"),
+      strokeOnly("stole-l", "M24.5 46 L24 63", "gear", 3),
+      strokeOnly("stole-r", "M39.5 46 L40 63", "gear", 3),
+      strokeOnly("collar-l", "M26.5 45.6 L33.5 54", "accent", 1.6),
+      strokeOnly("collar-r", "M37.5 45.6 L32 51.5", "accent", 1.6),
+      circle("pendant", 32, 57, 2.4, "accent", true),
+    ],
+    front: [
+      shape("putong-tip", "M42 11.5 L50.5 4 L47.8 13.5 Z", "putong"),
+      shape("putong", "M14.5 22 Q14 9 32 9 Q50 9 49.5 22 Q41 15.5 32 16 Q23 15.5 14.5 22 Z", "putong"),
+      strokeOnly("putong-trim", "M16.5 19 Q32 12 47.5 19", "accent", 1.4),
     ],
   },
 };
