@@ -12,10 +12,10 @@ import { finalize, heartPath, track } from "./util";
  * 64×64 grid: big head (r 17), small body, 2 px ink outline — matching the other Moodicons rigs.
  */
 
-export const CHIBI_CREWS = ["street", "sky-pirates", "shinobi"] as const;
+export const CHIBI_CREWS = ["street", "sky-pirates", "shinobi", "blade-hunters", "guild"] as const;
 export type ChibiCrew = (typeof CHIBI_CREWS)[number];
-export const CHIBI_CREW_TITLES: Record<ChibiCrew, string> = { street: "Street Crew", "sky-pirates": "Sky Pirates", shinobi: "Shinobi Crew" };
-export const CHIBI_CHARACTERS = ["kai", "amara", "mateo", "tala", "priya", "lena", "rook", "isla", "bo", "juno", "rina", "taro", "noor", "bram"] as const;
+export const CHIBI_CREW_TITLES: Record<ChibiCrew, string> = { street: "Street Crew", "sky-pirates": "Sky Pirates", shinobi: "Shinobi Crew", "blade-hunters": "Blade Hunters", guild: "Adventurers' Guild" };
+export const CHIBI_CHARACTERS = ["kai", "amara", "mateo", "tala", "priya", "lena", "rook", "isla", "bo", "juno", "rina", "taro", "noor", "bram", "lio", "vera", "sage", "brix", "pip", "mira", "ezra", "kofi"] as const;
 export type ChibiCharacter = (typeof CHIBI_CHARACTERS)[number];
 export const CHIBI_REACTIONS = ["cool", "powerup", "happy", "laughing", "love", "sad", "angry", "surprised"] as const;
 export type ChibiReaction = (typeof CHIBI_REACTIONS)[number];
@@ -32,6 +32,8 @@ interface Character {
   /** Outfit and anything worn around the neck. */
   body: Layer[];
   front: Layer[];
+  /** Drawn over the face (monocles, glasses). */
+  over?: Layer[];
 }
 
 const ink = { token: "ink" } as const;
@@ -360,6 +362,171 @@ const CHARACTERS: Record<ChibiCharacter, Character> = {
       strokeOnly("weave-4", "M46.5 11 L44 20", "ink", 0.8),
     ],
   },
+  // ─── Blade Hunters ── original crew; never checkered/patterned haori, boar masks, symbol earrings, forehead scars,
+  //     elemental "breathing" themes (fire, water, thunder…), butterfly ornaments or kanji-marked uniforms ───
+  lio: {
+    name: "Lio",
+    crew: "blade-hunters",
+    role: "the rookie night hunter with a glowing lantern",
+    tokens: { skin: "#EFC39B", hair: "#C8A26B", outfit: "#6D4C3D", accent: "#FFB300", gear: "#3E4A59" },
+    back: [shape("hair-back", "M14 28 Q12 8 32 8 Q52 8 50 28 Z", "hair")],
+    body: [
+      torso("gear"),
+      shape("vest-l", "M19.6 60 Q19.5 46 27 45.6 L29 63 L19.4 63 Z", "outfit", { strokeWidth: 1.8 }),
+      shape("vest-r", "M44.4 60 Q44.5 46 37 45.6 L35 63 L44.6 63 Z", "outfit", { strokeWidth: 1.8 }),
+      strokeOnly("lantern-strap", "M27 46.5 L36 52", "ink", 1.3),
+      { id: "lantern-cap", kind: "shape", shape: { type: "rect", x: 34, y: 50.6, width: 6, height: 2.2, rx: 0.8 }, fill: fill("gear"), stroke: ink, strokeWidth: 1.2 },
+      { id: "lantern", kind: "shape", shape: { type: "rect", x: 33.5, y: 52.6, width: 7, height: 8, rx: 2 }, fill: fill("accent"), stroke: ink, strokeWidth: 1.6 },
+      strokeOnly("lantern-flame", "M37 55 V58", "white", 1.4),
+    ],
+    front: [shape("hair-front", "M15 24 Q14 9 32 9 Q50 9 49 24 Q46 17 41 18 Q38 14 33 18.5 Q29 14 25 18.5 Q20 16 15 24 Z", "hair")],
+  },
+  vera: {
+    name: "Vera",
+    crew: "blade-hunters",
+    role: "the swift duelist with a crescent-moon hairpin",
+    tokens: { skin: "#D7A07C", hair: "#B8C7E0", outfit: "#4A2E6B", accent: "#FFD54F", gear: "#8A8F99", trim: "#C9A227" },
+    back: [
+      strokeOnly("grip-outline", "M18 47 L8.5 35", "ink", 4.8),
+      strokeOnly("grip", "M18 47 L8.5 35", "gear", 2.6),
+      strokeOnly("crossguard", "M10.2 42.4 L16.4 37.6", "trim", 2.6),
+      shape("hair-back", "M13 30 Q11 8 32 8 Q53 8 51 30 L47 30 L47 20 L17 20 L17 36 Q13.5 37 13 30 Z", "hair"),
+    ],
+    body: [
+      torso("outfit"),
+      shape("high-collar", "M22 47.5 L23.5 43.5 Q32 46.5 40.5 43.5 L42 47.5 Q32 51 22 47.5 Z", "outfit", { strokeWidth: 1.6 }),
+      circle("clasp-1", 32, 53.5, 1.3, "trim", true),
+      circle("clasp-2", 32, 58.5, 1.3, "trim", true),
+    ],
+    front: [
+      shape("hair-front", "M15 27 Q13 9 32 9 Q50 9 49 21 Q40 14 30 16.5 Q20 18.5 15 27 Z", "hair"),
+      { id: "moon-pin", kind: "shape", shape: { type: "path", d: "M41.5 10 Q51 12.5 44 20 Q46.6 14 41.5 10 Z" }, fill: fill("accent"), stroke: ink, strokeWidth: 1.2, lineJoin: "round" },
+    ],
+  },
+  sage: {
+    name: "Sage",
+    crew: "blade-hunters",
+    role: "the calm herbal healer in a leaf headwrap",
+    tokens: { skin: "#A86B45", hair: "#3B2A20", outfit: "#EFE6D2", accent: "#4CAF7A", gear: "#8D6E4A" },
+    back: [shape("hair-back", "M13 28 Q12 9 32 9 Q52 9 51 28 L50.5 40 Q46.5 42.5 45 38 L45 30 L19 30 L19 38 Q17.5 42.5 13.5 40 Z", "hair")],
+    body: [
+      torso("outfit"),
+      strokeOnly("sash", "M19.6 55.5 Q32 58.5 44.4 55.5", "accent", 3),
+      { id: "pouch", kind: "shape", shape: { type: "rect", x: 35.5, y: 56.5, width: 7, height: 6, rx: 1.6 }, fill: fill("gear"), stroke: ink, strokeWidth: 1.4 },
+      { id: "pouch-leaf", kind: "shape", shape: { type: "path", d: "M39 57.6 Q41.4 59.4 39 61.4 Q36.6 59.4 39 57.6 Z" }, fill: fill("accent") },
+    ],
+    front: [
+      shape("fringe", "M20 19.5 Q26 23 31 18 L31 16.5 L21 17 Z", "hair", { strokeWidth: 1.6 }),
+      shape("headwrap", "M14.5 22 Q14 8 32 8 Q50 8 49.5 22 Q41 16 32 16.5 Q23 16 14.5 22 Z", "accent"),
+      { id: "wrap-leaf", kind: "shape", shape: { type: "path", d: "M32 9.6 Q36.2 12.2 32 15.4 Q27.8 12.2 32 9.6 Z" }, fill: fill("white"), stroke: ink, strokeWidth: 1, lineJoin: "round" },
+    ],
+  },
+  brix: {
+    name: "Brix",
+    crew: "blade-hunters",
+    role: "the heavy-armored hunter with a mohawk",
+    tokens: { skin: "#7A4B2E", hair: "#1A1A1A", outfit: "#5D4037", accent: "#B0BEC5", gear: "#D84315" },
+    back: [],
+    body: [
+      torso("outfit"),
+      strokeOnly("strap", "M27 46.5 L42 62", "gear", 2.6),
+      shape("pauldron", "M17 53 Q15.5 44 24.5 44 Q28.5 46 28 51.5 Q22 49.5 17 53 Z", "accent"),
+      circle("rivet-1", 21, 48, 0.9, "ink"),
+      circle("rivet-2", 25, 47, 0.9, "ink"),
+    ],
+    front: [
+      { id: "fade-l", kind: "shape", shape: { type: "path", d: "M15.3 28 Q15 19 20 14.5 L22 23 Z" }, fill: fill("hair"), opacity: 0.4 },
+      { id: "fade-r", kind: "shape", shape: { type: "path", d: "M48.7 28 Q49 19 44 14.5 L42 23 Z" }, fill: fill("hair"), opacity: 0.4 },
+      { id: "stubble", kind: "shape", shape: { type: "path", d: "M18.5 33 Q20 44 32 44 Q44 44 45.5 33 Q44 40.5 32 41 Q20 40.5 18.5 33 Z" }, fill: fill("hair"), opacity: 0.35 },
+      shape("mohawk", "M27 14.5 Q25.5 4 32 1.5 Q38.5 4 37 14.5 Q32 12 27 14.5 Z", "hair"),
+    ],
+  },
+  // ─── Adventurers' Guild ── original crew; never playing cards, fishing rods, yo-yos, skateboards, chains,
+  //     licence cards or a spiky-haired boy in a green jacket ───
+  pip: {
+    name: "Pip",
+    crew: "guild",
+    role: "the trail tracker in a bush hat with binoculars",
+    tokens: { skin: "#F3CFB3", hair: "#B5452A", outfit: "#3B6E8F", accent: "#D9B26F", gear: "#2B2B2B" },
+    back: [],
+    body: [
+      torso("outfit"),
+      strokeOnly("bino-strap", "M22.5 47 Q32 52.5 41.5 47", "ink", 1.3),
+      { id: "bino-l", kind: "shape", shape: { type: "rect", x: 25, y: 51, width: 6, height: 7.5, rx: 2 }, fill: fill("gear"), stroke: ink, strokeWidth: 1.4 },
+      { id: "bino-r", kind: "shape", shape: { type: "rect", x: 33, y: 51, width: 6, height: 7.5, rx: 2 }, fill: fill("gear"), stroke: ink, strokeWidth: 1.4 },
+    ],
+    front: [
+      shape("tuft-l", "M15.3 20 Q14.4 27.5 16.2 31 L19 21.5 Z", "hair"),
+      shape("tuft-r", "M48.7 20 Q49.6 27.5 47.8 31 L45 21.5 Z", "hair"),
+      shape("hat-crown", "M19 16 Q19 5 32 5 Q45 5 45 16 Z", "accent"),
+      shape("hat-brim", "M8.5 18 Q32 11 55.5 18 Q32 22.5 8.5 18 Z", "accent"),
+      strokeOnly("hat-band", "M19.4 13.6 Q32 11 44.6 13.6", "outfit", 2.2),
+    ],
+  },
+  mira: {
+    name: "Mira",
+    crew: "guild",
+    role: "the beast tamer with a fluffy companion on her shoulder",
+    tokens: { skin: "#E3B58E", hair: "#6A4C93", outfit: "#E8608C", accent: "#FFFFFF", gear: "#FFCA28" },
+    back: [strokeOnly("tail-l", "M15.5 30 Q11 40 14 48.5", "hair", 5.5), strokeOnly("tail-r", "M48.5 30 Q53 40 50 48.5", "hair", 5.5)],
+    body: [
+      torso("outfit"),
+      circle("tie-l", 14.2, 40, 2, "gear", true),
+      circle("tie-r", 49.8, 40, 2, "gear", true),
+      {
+        id: "companion",
+        kind: "group",
+        children: [
+          { id: "pet-ear-l", kind: "shape", shape: { type: "polygon", points: "41.5 41.5 42.5 36.5 45.5 40" }, fill: fill("accent"), stroke: ink, strokeWidth: 1.2, lineJoin: "round" },
+          { id: "pet-ear-r", kind: "shape", shape: { type: "polygon", points: "48 40 51.5 37 51.8 42" }, fill: fill("accent"), stroke: ink, strokeWidth: 1.2, lineJoin: "round" },
+          circle("pet-body", 46.5, 45.5, 5.4, "accent", true),
+          circle("pet-eye-l", 44.8, 45, 0.8, "ink"),
+          circle("pet-eye-r", 48.2, 45, 0.8, "ink"),
+          { id: "pet-blush", kind: "shape", shape: { type: "ellipse", cx: 46.5, cy: 47.4, rx: 1.4, ry: 0.7 }, fill: fill("blush") },
+        ],
+      },
+    ],
+    front: [shape("hair-front", "M15 25 Q15 9 32 9 Q49 9 49 25 Q45 17 38.5 17 L35.5 21 L32.5 16.8 Q20 16 15 25 Z", "hair")],
+  },
+  ezra: {
+    name: "Ezra",
+    crew: "guild",
+    role: "the map strategist with a monocle and bow tie",
+    tokens: { skin: "#C99A6E", hair: "#2D2420", outfit: "#7A4B2A", accent: "#E0B84C", gear: "#F2EEE6", tie: "#2E7D5B" },
+    back: [],
+    body: [
+      torso("gear"),
+      shape("vest-l", "M19.6 60 Q19.5 46 27 45.6 L30 63 L19.4 63 Z", "outfit", { strokeWidth: 1.8 }),
+      shape("vest-r", "M44.4 60 Q44.5 46 37 45.6 L34 63 L44.6 63 Z", "outfit", { strokeWidth: 1.8 }),
+      { id: "bow-tie", kind: "shape", shape: { type: "path", d: "M28 46.5 L32 48.5 L36 46.5 L36 50.5 L32 48.5 L28 50.5 Z" }, fill: fill("tie"), stroke: ink, strokeWidth: 1.2, lineJoin: "round" },
+    ],
+    front: [shape("hair-front", "M15 24 Q14 8 33 8 Q50 9 49 22 Q45 15 36.5 14.5 Q30 17.5 22 16 Q17 18 15 24 Z", "hair")],
+    over: [
+      { id: "monocle", kind: "shape", shape: { type: "circle", cx: 38, cy: 29, r: 4.8 }, fill: "none", stroke: fill("accent"), strokeWidth: 1.6 },
+      strokeOnly("monocle-chain", "M42.6 30.5 Q46.5 37 44.5 43.5", "accent", 1),
+    ],
+  },
+  kofi: {
+    name: "Kofi",
+    crew: "guild",
+    role: "the guild examiner in a green peaked cap with a star badge",
+    tokens: { skin: "#5A3522", hair: "#121212", outfit: "#2F5D46", accent: "#E0B84C", gear: "#3E7A5A" },
+    back: [],
+    body: [
+      torso("outfit"),
+      strokeOnly("epaulette-l", "M20.5 49.5 L25.5 46.5", "accent", 2.4),
+      strokeOnly("epaulette-r", "M43.5 49.5 L38.5 46.5", "accent", 2.4),
+      circle("chest-badge", 38.5, 54, 1.8, "accent", true),
+    ],
+    front: [
+      { id: "fade-l", kind: "shape", shape: { type: "path", d: "M15.3 29 Q15 22 17 19 L20 19 L20.5 25 Z" }, fill: fill("hair"), opacity: 0.5 },
+      { id: "fade-r", kind: "shape", shape: { type: "path", d: "M48.7 29 Q49 22 47 19 L44 19 L43.5 25 Z" }, fill: fill("hair"), opacity: 0.5 },
+      shape("goatee", "M29 40.6 Q32 44.4 35 40.6 Q32 42 29 40.6 Z", "hair", { strokeWidth: 1.2 }),
+      shape("cap", "M15.5 19 Q15 6 32 6.5 Q49 6 48.5 19 Z", "gear"),
+      shape("visor", "M15 18.5 Q32 15.5 49 18.5 Q46.5 23.5 32 21.5 Q17.5 23.5 15 18.5 Z", "hair"),
+      { id: "cap-badge", kind: "shape", shape: { type: "polygon", points: "32 8.6 33.2 11.6 36.4 11.8 33.9 13.8 34.8 16.8 32 15.1 29.2 16.8 30.1 13.8 27.6 11.8 30.8 11.6" }, fill: fill("accent"), stroke: ink, strokeWidth: 1.2, lineJoin: "round" },
+    ],
+  },
 };
 
 // ─── Faces ───────────────────────────────────────────────────────────────────
@@ -581,7 +748,7 @@ export function buildChibi({ character, reaction: r }: { character: ChibiCharact
     name: `${c.name} — ${REACTION_TITLE[r]}`,
     viewBox: [0, 0, 64, 64],
     tokens: { ...SHARED, ...c.tokens },
-    layers: [{ id: "char", kind: "group", origin: [32, 62], children: [...(x.behind ?? []), ...c.back, ...c.body, head, ...c.front, ...x.face] }],
+    layers: [{ id: "char", kind: "group", origin: [32, 62], children: [...(x.behind ?? []), ...c.back, ...c.body, head, ...c.front, ...x.face, ...(c.over ?? [])] }],
     timeline: { duration: x.duration, loop: true, tracks: x.tracks, markers: x.markers },
     sounds: x.sounds,
     interactions: [

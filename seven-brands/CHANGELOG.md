@@ -2,6 +2,14 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.4.7] — 2026-11-25 — Chibi crews: Blade Hunters and Adventurers' Guild
+
+### Added
+- **Blade Hunters** (original night-monster hunters): Lio (rookie with a glowing lantern and leather vest), Vera (swift duelist with a sword over her shoulder and a crescent-moon hairpin), Sage (herbal healer in a leaf headwrap), Brix (armored hunter with a mohawk and steel shoulder plate).
+- **Adventurers' Guild:** Pip (trail tracker in a bush hat with binoculars), Mira (beast tamer with a fluffy original companion on her shoulder), Ezra (map strategist with a monocle and bow tie), Kofi (guild examiner in a green peaked cap with a star badge).
+- 22 characters across 5 crews × 8 reactions = 176 chibi icons with sound, all QA 100; a pack per character and a bundle per crew.
+- "Never" lists for both crews in the rig (no patterned haori, boar masks, symbol earrings, elemental "breathing" themes; no playing cards, fishing rods, yo-yos, skateboards or chains).
+
 ## [0.4.6] — 2026-11-25 — Chibi crews: Sky Pirates and Shinobi
 
 ### Added
