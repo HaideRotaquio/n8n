@@ -1,5 +1,6 @@
 import type { AssetDefinition } from "@sb/asset";
 import { buildFace, FACE_EXPRESSIONS, FACE_PALETTES, type FacePalette } from "./moodicons-face";
+import { buildChibi, CHIBI_VARIANTS, parseChibiVariant } from "./moodicons-chibi";
 import { BAWAL_PALETTES, BAWAL_SIGNS, buildBawal, type BawalPalette } from "./moodicons-bawal";
 import { buildSymbol, SYMBOL_PALETTES, SYMBOLS, type SymbolPalette } from "./moodicons-symbols";
 import { buildGlyph, GLYPH_PALETTES, GLYPHS, type GlyphPalette } from "./sonicglyphs";
@@ -7,6 +8,7 @@ import { buildGlyph, GLYPH_PALETTES, GLYPHS, type GlyphPalette } from "./sonicgl
 export * from "./moodicons-face";
 export * from "./moodicons-symbols";
 export * from "./moodicons-bawal";
+export * from "./moodicons-chibi";
 export * from "./sonicglyphs";
 export { heartPath } from "./util";
 export * from "./launch";
@@ -45,6 +47,14 @@ export const RIGS: Record<string, RigInfo> = {
     variants: [...BAWAL_SIGNS],
     palettes: Object.keys(BAWAL_PALETTES),
     build: (v, p) => buildBawal({ sign: v as (typeof BAWAL_SIGNS)[number], palette: (p ?? "classic") as BawalPalette }),
+  },
+  "moodicons-chibi@1": {
+    id: "moodicons-chibi@1",
+    brand: "moodicons",
+    label: "Moodicons Chibi Cast (original characters)",
+    variants: [...CHIBI_VARIANTS],
+    palettes: ["original"],
+    build: (v) => buildChibi(parseChibiVariant(v)),
   },
   "sonicglyphs-line@1": {
     id: "sonicglyphs-line@1",

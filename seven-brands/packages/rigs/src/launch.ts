@@ -1,5 +1,6 @@
 import { buildFace, FACE_EXPRESSIONS, FACE_PALETTES, type FacePalette } from "./moodicons-face";
 import { BAWAL_SIGNS, buildBawal } from "./moodicons-bawal";
+import { buildChibi, CHIBI_CHARACTERS, CHIBI_NAMES, CHIBI_REACTIONS } from "./moodicons-chibi";
 import { buildSymbol, SYMBOL_PALETTES, SYMBOLS, type SymbolPalette } from "./moodicons-symbols";
 import { buildGlyph, GLYPH_PALETTES, GLYPHS, type GlyphPalette } from "./sonicglyphs";
 
@@ -55,7 +56,28 @@ function moodicons(): ProductPlan[] {
     const ad = buildBawal({ sign: b });
     return { slug: ad.slug, title: ad.name, description: `${ad.a11y.label}. Animated sign with sound; no words in the artwork, so it works in any language.`, kind: "single", assetSlugs: [ad.slug], prices: MOOD_SINGLE };
   });
+  const chibiSlugs = (c: (typeof CHIBI_CHARACTERS)[number]) => CHIBI_REACTIONS.map((r) => buildChibi({ character: c, reaction: r }).slug);
+  const chibi = CHIBI_CHARACTERS.map((c): ProductPlan => {
+    const { name, role } = CHIBI_NAMES[c];
+    return {
+      slug: `chibi-${c}-pack`,
+      title: `Chibi ${name} — Reactions Pack`,
+      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (happy, laughing, in love, sad, angry, surprised), each with its own sound. An original Moodicons character.`,
+      kind: "pack",
+      assetSlugs: chibiSlugs(c),
+      prices: { personal: 900, commercial: 2900, team: 5900, agency: 11900 },
+    };
+  });
   return [
+    {
+      slug: "chibi-cast-bundle",
+      title: "Chibi Cast Bundle",
+      description: `The whole original cast: ${CHIBI_CHARACTERS.map((c) => CHIBI_NAMES[c].name).join(", ")} — ${CHIBI_CHARACTERS.length * CHIBI_REACTIONS.length} animated reactions with sound.`,
+      kind: "pack",
+      assetSlugs: CHIBI_CHARACTERS.flatMap(chibiSlugs),
+      prices: MOOD_BUNDLE,
+    },
+    ...chibi,
     {
       slug: "bawal-signs-davao-pack",
       title: "Bawal Signs — Davao Pack",
@@ -135,7 +157,7 @@ export function launchCatalog(brandSlug: string): ProductPlan[] {
 
 /** Rig jobs (rig id + palettes) needed so every asset in the launch catalog exists. */
 export function launchRigJobs(brandSlug: string): { rig: string; palettes: string[] }[] {
-  if (brandSlug === "moodicons") return [{ rig: "moodicons-face@1", palettes: facePalettes }, { rig: "moodicons-symbols@1", palettes: symbolPalettes }, { rig: "moodicons-bawal@1", palettes: ["classic"] }];
+  if (brandSlug === "moodicons") return [{ rig: "moodicons-face@1", palettes: facePalettes }, { rig: "moodicons-symbols@1", palettes: symbolPalettes }, { rig: "moodicons-bawal@1", palettes: ["classic"] }, { rig: "moodicons-chibi@1", palettes: ["original"] }];
   if (brandSlug === "sonicglyphs") return [{ rig: "sonicglyphs-line@1", palettes: glyphPalettes }];
   return [];
 }
