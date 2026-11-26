@@ -54,6 +54,7 @@ function Shell({ brandName, tagline, signedIn, testMode, children }: ShellProps)
           </div>
           <ul className="space-y-1 text-sm font-semibold">
             <li><Link href="/help/licenses">Licenses explained</Link></li>
+            <li><Link href="/developers">Developers &amp; AI agents</Link></li>
             <li><Link href="/help/refunds">Refunds</Link></li>
             <li><Link href="/licenses/verify">Verify a license</Link></li>
           </ul>

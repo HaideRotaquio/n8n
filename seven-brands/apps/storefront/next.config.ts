@@ -19,7 +19,7 @@ const config: NextConfig = {
   // Self-contained server for containers (see infrastructure/Dockerfile); traced from the monorepo root.
   output: "standalone",
   outputFileTracingRoot: path.resolve(process.cwd(), "../.."),
-  transpilePackages: ["@sb/core", "@sb/db", "@sb/auth", "@sb/storage", "@sb/ui", "@sb/asset", "@sb/commerce", "@sb/brands", "@sb/audio"],
+  transpilePackages: ["@sb/core", "@sb/db", "@sb/auth", "@sb/storage", "@sb/ui", "@sb/asset", "@sb/commerce", "@sb/brands", "@sb/audio", "@sb/export"],
   serverExternalPackages: ["pg"],
   async headers() {
     return [

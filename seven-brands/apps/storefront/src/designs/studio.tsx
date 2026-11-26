@@ -53,6 +53,7 @@ function Shell({ brandName, tagline, signedIn, testMode, children }: ShellProps)
           <span>{brandName} — {tagline}</span>
           <span className="flex gap-5">
             <Link href="/help/licenses" className="hover:text-[var(--color-primary)]">Licenses</Link>
+            <Link href="/developers" className="hover:text-[var(--color-primary)]">Developers</Link>
             <Link href="/help/refunds" className="hover:text-[var(--color-primary)]">Refunds</Link>
             <Link href="/licenses/verify" className="hover:text-[var(--color-primary)]">Verify</Link>
           </span>

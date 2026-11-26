@@ -138,6 +138,9 @@ importers:
       '@sb/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@sb/export':
+        specifier: workspace:*
+        version: link:../../packages/export
       '@sb/player':
         specifier: workspace:*
         version: link:../../packages/player

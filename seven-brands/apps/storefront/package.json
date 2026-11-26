@@ -22,6 +22,7 @@
     "@sb/commerce": "workspace:*",
     "@sb/core": "workspace:*",
     "@sb/db": "workspace:*",
+    "@sb/export": "workspace:*",
     "@sb/player": "workspace:*",
     "@sb/rigs": "workspace:*",
     "@sb/storage": "workspace:*",

@@ -85,6 +85,52 @@ test("buy, download a licensed package and verify the license", async ({ page })
   expect(data.orders[0]).toMatchObject({ totalCents: 1500, status: "paid" });
 });
 
+test("developer API: public search, then license-checked icon files for the CLI and AI agents", async ({ page }) => {
+  await page.goto("/developers");
+  await expect(page.getByRole("heading", { name: "For developers and AI agents" })).toBeVisible();
+  await expect(page.getByText("claude mcp add moodicons").first()).toBeVisible();
+  const llms = await page.evaluate(async () => (await fetch("/llms.txt")).text());
+  expect(llms).toContain("npx -y moodicons mcp");
+
+  const search = await page.evaluate(async () => (await fetch("/api/v1/icons?q=heart")).json());
+  expect(search.icons[0]).toMatchObject({ slug: "beating-heart", hasSound: true });
+  expect(search.icons[0].products.map((p: { slug: string }) => p.slug).sort()).toEqual(["beating-heart", "free-heart"]);
+  expect(search.icons[0].previewUrl).toContain("/api/v1/icons/beating-heart/preview.svg");
+  const detail = await page.evaluate(async () => (await fetch("/api/v1/icons/beating-heart")).json());
+  expect(detail.formats).toContain("react");
+  const preview = await page.evaluate(async () => {
+    const r = await fetch("/api/v1/icons/beating-heart/preview.svg");
+    return { type: r.headers.get("content-type"), body: await r.text() };
+  });
+  expect(preview.type).toContain("image/svg+xml");
+  expect(preview.body).toContain("<svg");
+
+  const call = (code: string | null, format: string) =>
+    page.evaluate(
+      async ([c, f]) => {
+        const r = await fetch("/api/v1/icons/beating-heart/files", { method: "POST", headers: { "content-type": "application/json", ...(c ? { authorization: `Bearer ${c}` } : {}) }, body: JSON.stringify({ format: f }) });
+        return { status: r.status, body: await r.json() };
+      },
+      [code, format] as const,
+    );
+  expect(await call(null, "react")).toMatchObject({ status: 401, body: { error: "license_required" } });
+  expect(await call("MOOD-AAAA-BBBB-CCCC-DDDD", "react")).toMatchObject({ status: 401, body: { error: "invalid_license" } });
+  expect(await call(licenseCode, "pdf")).toMatchObject({ status: 400, body: { error: "bad_format" } });
+  const ok = await call(licenseCode, "react");
+  expect(ok.status).toBe(200);
+  expect(ok.body.files[0].path).toBe("BeatingHeart.tsx");
+  expect(ok.body.files[0].content).toContain("export function BeatingHeart");
+  expect(ok.body).toMatchObject({ needsPlayer: true, license: { code: licenseCode, licenseType: "commercial" } });
+  const wc = await call(licenseCode, "web-component");
+  expect(wc.body.files[0].path).toBe("beating-heart.json");
+  expect(wc.body.usage).toContain('<daos-asset src="icons/beating-heart.json"');
+
+  // A Moodicons code means nothing on another brand's store.
+  await page.goto(`${OTHER_STORE_URL}/developers`);
+  const other = await call(licenseCode, "react");
+  expect(other).toMatchObject({ status: 401, body: { error: "invalid_license" } });
+});
+
 test("another customer can't use someone else's entitlement, and sessions don't cross brands", async ({ page }) => {
   await signUp(page, OTHER, "/account");
   await expect(page.getByText("Nothing here yet")).toBeVisible();
