@@ -2,6 +2,15 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.7.0] — 2026-11-26 — Cute voices for every emotion
+
+### Added
+- **Voice synthesizer** (`packages/audio/src/voice.ts`): syllables built additively from a pitched voice source shaped by child-like vowel formants (ee, eh, ah, oh, oo, hummed m), with breath onsets, lip smacks, sniffles and whistles. Fully synthesized, so owned outright; renders in the browser, in exports and in the native sound loops.
+- 18 presets (`synth:voice-*`): giggle "hehehe~", laugh "ahaha!", sleepy snore-in and "pyuu~" whistle, party horn with popper and sparkles, thinking "hmm~?", shy "ehehe…", nervous "eep! ehh~", kiss "mwah!", cool "heh~", wink "tee-hee~", surprised "oh!", pouty "hmph!", crying "waaah~" with sniffles, lovestruck "aww~", sad "ohh…", happy "yay!", confused "huh?", scared "eep!".
+- **Every Moodicons face** now speaks its emotion (heart eyes keep the heartbeat under an "aww~"; the crying wail starts with the loop and the drip stays on the tear).
+- **Every chibi character has their own voice pitch** (deeper for Bram, Brix, Ngil-ad and Vorak; higher for Mira, Pip and Rina), used for cool, happy, laughing, giggle, wink, excited, in love, shy, sleepy, confused, sad, scared, angry and surprised. Jiggle's boing and the power-up charge stay as they were.
+- Tests: every voice exists, every character has a pitch, voice rules only name real cues, and every voice finishes before its loop restarts.
+
 ## [0.6.1] — 2026-11-26 — Heartbeat and kick audible on phones
 
 ### Fixed

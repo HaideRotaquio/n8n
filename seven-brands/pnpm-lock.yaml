@@ -410,6 +410,10 @@ importers:
       '@sb/asset':
         specifier: workspace:*
         version: link:../asset
+    devDependencies:
+      '@sb/audio':
+        specifier: workspace:*
+        version: link:../audio
 
   packages/storage:
     dependencies:

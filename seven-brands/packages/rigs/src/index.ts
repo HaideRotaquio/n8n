@@ -11,6 +11,7 @@ export * from "./moodicons-bawal";
 export * from "./moodicons-chibi";
 export * from "./sonicglyphs";
 export { heartPath } from "./util";
+export * from "./voices";
 export * from "./launch";
 
 export interface RigInfo {

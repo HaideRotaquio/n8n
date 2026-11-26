@@ -1,6 +1,7 @@
 import type { AssetDefinition, Layer, SoundCue, Track } from "@sb/asset";
 import { clayGradients, contactShadow, litCopies, specular, sphereLight, type Sphere } from "./soft3d";
 import { finalize, heartPath, track } from "./util";
+import { CHIBI_VOICE_PITCH, CHIBI_VOICES, voiced } from "./voices";
 
 /**
  * Crews are built on anime GENRES (sky pirates, shinobi), never on specific characters: each one's silhouette, colors and
@@ -1183,7 +1184,7 @@ export function buildChibi({ character, reaction: r, style = "flat" }: { charact
           ? [...(x.behind ?? []), ...clay.back, ...clay.body, clay.neck, head, ...clay.head, ...clay.front, ...x.face, ...(c.over ?? [])]
           : [...(x.behind ?? []), ...c.back, ...c.body, head, ...c.front, ...x.face, ...(c.over ?? [])] }],
     timeline: { duration: x.duration, loop: true, tracks: x.tracks, markers: x.markers },
-    sounds: x.sounds,
+    sounds: voiced(x.sounds, CHIBI_VOICES[r] ?? [], CHIBI_VOICE_PITCH[character] ?? 1),
     interactions: [
       { on: "load", action: "play" },
       { on: "click", action: "restart" },

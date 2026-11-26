@@ -2,6 +2,7 @@ import { clayGradients, specular, sphereLight, type Sphere } from "./soft3d";
 
 const FACE: Sphere = { cx: 32, cy: 32, r: 27 };
 import type { AssetDefinition, Layer, SoundCue, Track } from "@sb/asset";
+import { FACE_VOICES, voiced } from "./voices";
 import { finalize, heartPath, SPRING_SNAPPY, SPRING_SOFT, track } from "./util";
 
 /**
@@ -389,7 +390,7 @@ export function buildFace({ expression, palette = "classic", style = "flat" }: F
     gradients: style === "3d" ? (() => { const { layer: _l, ...spec } = specular("spec-head", FACE); return clayGradients({ head: FACE }, [spec]); })() : [],
     layers: [faceGroup, ...floating],
     timeline: { duration: m.duration, loop: true, tracks: m.tracks, markers: m.markers },
-    sounds: m.sounds,
+    sounds: voiced(m.sounds, FACE_VOICES[expression] ?? []),
     interactions: [
       { on: "load", action: "play" },
       { on: "click", action: "restart" },

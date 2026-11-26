@@ -1,4 +1,5 @@
 import { applyBiquad, biquad, DEFAULT_SAMPLE_RATE, fadeEdges, prng, samples } from "./dsp";
+import { VOICE_PRESETS } from "./voice";
 
 /**
  * Procedural sound presets. Every sound is generated from code, so we own it outright
@@ -218,6 +219,7 @@ export const PRESETS: Record<string, SynthPreset> = {
       return out;
     },
   },
+  ...VOICE_PRESETS,
 };
 
 export const PRESET_IDS = Object.keys(PRESETS);
