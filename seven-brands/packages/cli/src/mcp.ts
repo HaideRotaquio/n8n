@@ -59,10 +59,10 @@ export function createMcpServer(ctx: Context): McpServer {
     "add_icon",
     {
       title: "Add icon to project",
-      description: `Write an icon's source into the user's project. Defaults: React projects get a .tsx component in src/components/icons; others get a Web Component. Needs a ${ctx.brandName} license that covers the icon.`,
+      description: `Write an icon's source into the user's project. Defaults: React/Next get a .tsx component in src/components/icons; React Native/Expo get a native component (Lottie + synced sound); Flutter gets a widget in lib/icons (pubspec.yaml assets updated); others get a Web Component. Needs a ${ctx.brandName} license that covers the icon.`,
       inputSchema: {
         slug: z.string().max(100),
-        format: z.enum(SOURCE_FORMATS).optional().describe("react, web-component, svg-animated (no sound), svg (still), lottie (no sound) or json."),
+        format: z.enum(SOURCE_FORMATS).optional().describe("react, web-component, react-native, flutter, svg-animated (no sound), svg (still), lottie (no sound) or json."),
         directory: z.string().max(200).optional().describe("Folder inside the project, relative to its root."),
       },
     },
@@ -73,7 +73,7 @@ export function createMcpServer(ctx: Context): McpServer {
           const links = r.buyLinks?.length ? `\nAvailable in:\n${r.buyLinks.map((l) => `- ${l.title}${l.free ? " (free)" : ""}: ${l.url}`).join("\n")}` : "";
           return text(`${r.error}${links}`, true);
         }
-        return text(`Added ${slug} (${r.format}) to ${r.iconsDir}.\nFiles: ${r.written?.length ? r.written.join(", ") : "already up to date"}\nLicense: ${r.license}\n\nUsage:\n${r.usage}`);
+        return text(`Added ${slug} (${r.format}) to ${r.iconsDir}.\nFiles: ${r.written?.length ? r.written.join(", ") : "already up to date"}\nLicense: ${r.license}${r.setup ? `\nOne-time setup: ${r.setup}` : ""}\n\nUsage:\n${r.usage}`);
       } catch (e) {
         return text((e as Error).message, true);
       }

@@ -3,7 +3,7 @@
  * A customer can own several licenses (one per purchase), so `files` tries each code until one covers the icon.
  */
 
-export const SOURCE_FORMATS = ["react", "web-component", "svg-animated", "svg", "lottie", "json"] as const;
+export const SOURCE_FORMATS = ["react", "web-component", "react-native", "flutter", "svg-animated", "svg", "lottie", "json"] as const;
 export type SourceFormat = (typeof SOURCE_FORMATS)[number];
 
 export interface ProductRef {
@@ -28,9 +28,10 @@ export interface IconCard {
 export interface IconFiles {
   icon: { slug: string; name: string; version: number };
   format: SourceFormat;
-  files: { path: string; content: string }[];
+  files: { path: string; content: string; encoding?: "base64" }[];
   needsPlayer: boolean;
   usage: string;
+  setup?: string;
   license: { code: string; licenseType: string; productSlug: string; productTitle: string; notice: string; termsUrl: string };
 }
 

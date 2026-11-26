@@ -70,7 +70,7 @@ export async function main(argv: string[], io: { out: (s: string) => void; err: 
         const r = await addIcon(ctx, slug, { format: a.flags.format as string | undefined, dir: a.flags.dir as string | undefined, force: Boolean(a.flags.force) });
         results.push(r);
         if (json) continue;
-        if (r.ok) io.out(`✓ ${slug} → ${r.iconsDir} (${r.format})${r.written?.length ? "" : " — already up to date"}\n  ${r.usage?.split("\n").join("\n  ")}\n`);
+        if (r.ok) io.out(`✓ ${slug} → ${r.iconsDir} (${r.format})${r.written?.length ? "" : " — already up to date"}\n${r.setup ? `  Setup (once): ${r.setup}\n` : ""}  ${r.usage?.split("\n").join("\n  ")}\n`);
         else {
           failed++;
           io.err(`✗ ${slug}: ${r.error}\n${(r.buyLinks ?? []).map((l) => `  ${l.title}${l.free ? " (free)" : ""}: ${l.url}\n`).join("")}`);

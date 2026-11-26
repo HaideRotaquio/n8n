@@ -2,7 +2,7 @@ import path from "node:path";
 import { SOURCE_FORMATS, StoreError, type IconCard, type SourceFormat } from "./client";
 import type { Context } from "./context";
 import { forgetCodes, maskCode, parseCodes, saveCode } from "./credentials";
-import { detectProject, safeDir, writeIcon } from "./project";
+import { detectProject, ensureFlutterAssets, fillPlaceholders, safeDir, writeIcon } from "./project";
 
 /** The operations behind both the CLI and the MCP server, returning data (callers format it). */
 
@@ -23,6 +23,7 @@ export interface AddResult {
   iconsDir?: string;
   written?: string[];
   usage?: string;
+  setup?: string;
   license?: string;
   error?: string;
   code?: string;
@@ -39,14 +40,22 @@ export async function addIcon(ctx: Context, slug: string, opts: AddOptions = {})
   const { format, iconsDir } = resolveTarget(ctx, opts);
   try {
     const files = await ctx.client.files(slug, format, await ctx.codes());
-    const w = await writeIcon(iconsDir, files, ctx.playerJs, { force: opts.force });
+    const w = await writeIcon(iconsDir, files, ctx.playerJs, { force: opts.force, root: ctx.root });
+    let setup = files.setup;
+    if (format === "flutter") {
+      const pub = await ensureFlutterAssets(ctx.root, iconsDir);
+      const dir = `${path.relative(ctx.root, iconsDir).split(path.sep).join("/")}/`;
+      setup = `flutter pub add daos_icons lottie audioplayers${pub === "added" ? ` (added ${dir} to pubspec.yaml assets)` : pub === "manual" ? `, and add "- ${dir}" under flutter: assets: in pubspec.yaml` : ""}`;
+      if (pub === "added") w.written.push(path.join(ctx.root, "pubspec.yaml"));
+    }
     return {
       slug,
       ok: true,
       format,
       iconsDir: path.relative(ctx.root, iconsDir) || ".",
       written: w.written.map((f) => path.relative(ctx.root, f)),
-      usage: files.usage,
+      usage: fillPlaceholders(files.usage, ctx.root, iconsDir),
+      setup,
       license: `${files.license.productTitle} (${files.license.licenseType}, ${maskCode(files.license.code)})`,
     };
   } catch (e) {

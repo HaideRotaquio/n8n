@@ -24,7 +24,7 @@ import { exportLottie } from "./lottie";
 
 import { FORMAT_CAPABILITIES, type ExportFormat } from "@sb/asset";
 export { FORMAT_CAPABILITIES, type ExportFormat };
-import { escapeHtml, exportAnimatedSvg, exportReact, exportStaticSvg, scriptSafeJson, type ExportOptions } from "./source";
+import { escapeHtml, exportAnimatedSvg, exportReact, exportStaticSvg, renderSoundTrack, scriptSafeJson, type ExportOptions } from "./source";
 export * from "./source";
 
 // ─── Raster frames ───────────────────────────────────────────────────────────
@@ -61,52 +61,6 @@ export function renderFrames(ad: AssetDefinition, opts: ExportOptions = {}): { f
 }
 
 // ─── Audio ───────────────────────────────────────────────────────────────────
-
-export interface SoundTrack {
-  /** One channel (mono) or two (stereo: left, right). Stereo only when at least one cue is panned. */
-  channels: Float32Array[];
-  /** Mono mix-down (same as channels[0] for mono tracks). */
-  samples: Float32Array;
-  sampleRate: number;
-  normalization: NormalizeResult;
-  cues: { id: string; sound: string; atMs: number; gain: number; pan: number }[];
-}
-
-/** Stored sounds (`snd_…`) are passed in already decoded; synth sounds are rendered here. */
-export function renderSoundTrack(
-  ad: AssetDefinition,
-  loops = 1,
-  stored: Record<string, Float32Array> = {},
-  sampleRate = DEFAULT_SAMPLE_RATE,
-): SoundTrack | null {
-  if (ad.sounds.length === 0) return null;
-  const timelineCues = ad.sounds.filter(
-    (c) => !ad.interactions.some((i) => i.action === "playSound" && i.cue === c.id && i.on !== "load"),
-  );
-  const cueList = (timelineCues.length ? timelineCues : ad.sounds).map((c) => ({ c, at: cueTime(c, ad.timeline), pan: cuePan(c, ad) }));
-  const mixCues = [];
-  const cues = [];
-  for (let l = 0; l < loops; l++) {
-    for (const { c, at, pan } of cueList) {
-      const preset = parseSynthRef(c.sound);
-      const buffer = preset ? renderPreset(preset, c.params ?? {}, sampleRate) : stored[c.sound];
-      if (!buffer) throw new Error(`Sound ${c.sound} is not available for export`);
-      const atMs = l * ad.timeline.duration + at;
-      mixCues.push({ buffer, at: atMs / 1000, gain: c.gain, pan });
-      if (l === 0) cues.push({ id: c.id, sound: c.sound, atMs, gain: c.gain, pan });
-    }
-  }
-  const seconds = (ad.timeline.duration * loops) / 1000;
-  if (cueList.some((c) => c.pan !== 0)) {
-    const channels = mixStereo(mixCues, seconds, sampleRate);
-    const normalization = normalizeChannels(channels, sampleRate);
-    const samples = channels[0].map((v, i) => (v + channels[1][i]!) / 2);
-    return { channels, samples, sampleRate, normalization, cues };
-  }
-  const samples = mix(mixCues, seconds, sampleRate);
-  const normalization = normalize(samples, sampleRate);
-  return { channels: [samples], samples, sampleRate, normalization, cues };
-}
 
 // ─── Video via ffmpeg ────────────────────────────────────────────────────────
 

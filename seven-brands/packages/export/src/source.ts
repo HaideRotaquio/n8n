@@ -1,4 +1,5 @@
-import { renderAnimatedSvgString, renderFrameSvg, type AssetDefinition } from "@sb/asset";
+import { cuePan, cueTime, renderAnimatedSvgString, renderFrameSvg, type AssetDefinition } from "@sb/asset";
+import { DEFAULT_SAMPLE_RATE, encodeWav, mix, mixStereo, normalize, normalizeChannels, parseSynthRef, renderPreset, type NormalizeResult } from "@sb/audio";
 import { exportLottie } from "./lottie";
 
 /**
@@ -82,17 +83,71 @@ export function escapeHtml(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// ─── Sound track (pure; also used by video exports) ──────────────────────────
+
+export interface SoundTrack {
+  /** One channel (mono) or two (stereo: left, right). Stereo only when at least one cue is panned. */
+  channels: Float32Array[];
+  /** Mono mix-down (same as channels[0] for mono tracks). */
+  samples: Float32Array;
+  sampleRate: number;
+  normalization: NormalizeResult;
+  cues: { id: string; sound: string; atMs: number; gain: number; pan: number }[];
+}
+
+/** Stored sounds (`snd_…`) are passed in already decoded; synth sounds are rendered here. */
+export function renderSoundTrack(
+  ad: AssetDefinition,
+  loops = 1,
+  stored: Record<string, Float32Array> = {},
+  sampleRate = DEFAULT_SAMPLE_RATE,
+): SoundTrack | null {
+  if (ad.sounds.length === 0) return null;
+  const timelineCues = ad.sounds.filter(
+    (c) => !ad.interactions.some((i) => i.action === "playSound" && i.cue === c.id && i.on !== "load"),
+  );
+  const cueList = (timelineCues.length ? timelineCues : ad.sounds).map((c) => ({ c, at: cueTime(c, ad.timeline), pan: cuePan(c, ad) }));
+  const mixCues = [];
+  const cues = [];
+  for (let l = 0; l < loops; l++) {
+    for (const { c, at, pan } of cueList) {
+      const preset = parseSynthRef(c.sound);
+      const buffer = preset ? renderPreset(preset, c.params ?? {}, sampleRate) : stored[c.sound];
+      if (!buffer) throw new Error(`Sound ${c.sound} is not available for export`);
+      const atMs = l * ad.timeline.duration + at;
+      mixCues.push({ buffer, at: atMs / 1000, gain: c.gain, pan });
+      if (l === 0) cues.push({ id: c.id, sound: c.sound, atMs, gain: c.gain, pan });
+    }
+  }
+  const seconds = (ad.timeline.duration * loops) / 1000;
+  if (cueList.some((c) => c.pan !== 0)) {
+    const channels = mixStereo(mixCues, seconds, sampleRate);
+    const normalization = normalizeChannels(channels, sampleRate);
+    const samples = channels[0].map((v, i) => (v + channels[1][i]!) / 2);
+    return { channels, samples, sampleRate, normalization, cues };
+  }
+  const samples = mix(mixCues, seconds, sampleRate);
+  const normalization = normalize(samples, sampleRate);
+  return { channels: [samples], samples, sampleRate, normalization, cues };
+}
+
 // ─── Developer API / CLI source files ────────────────────────────────────────
 
 /** Formats the developer API can hand to the CLI and MCP server (text only; the CLI ships the player runtime). */
-export const SOURCE_FORMATS = ["react", "web-component", "svg-animated", "svg", "lottie", "json"] as const;
+export const SOURCE_FORMATS = ["react", "web-component", "react-native", "flutter", "svg-animated", "svg", "lottie", "json"] as const;
 export type SourceFormat = (typeof SOURCE_FORMATS)[number];
 
 export interface SourceFile {
   /** Path relative to the icons folder. */
   path: string;
+  /** Text, or base64 when `encoding` is "base64" (audio). May contain {{ICONS_DIR}}, which the CLI replaces with the
+   *  icons folder's path relative to the project root (Flutter asset paths need it). */
   content: string;
+  encoding?: "base64";
 }
+
+/** Package names of the native players (published separately; see packages/react-native and packages/flutter). */
+export const NATIVE_PACKAGES = { reactNative: "daos-icons-react-native", flutter: "daos_icons" } as const;
 
 export interface IconSource {
   files: SourceFile[];
@@ -100,12 +155,91 @@ export interface IconSource {
   needsPlayer: boolean;
   /** How to use it, ready to paste. */
   usage: string;
+  /** One-time setup the project needs (e.g. installing the native player). */
+  setup?: string;
 }
 
+/** One loop of the icon's sound, mixed (stereo when panned) and loudness-normalized, as a WAV file. */
+export function soundLoopWav(ad: AssetDefinition, stored: Record<string, Float32Array> = {}): Uint8Array | null {
+  const track = renderSoundTrack(ad, 1, stored);
+  return track ? encodeWav(track.channels, track.sampleRate) : null;
+}
+
+const toBase64 = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64");
+const dartString = (s: string) => `'${s.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\$/g, "\\$")}'`;
+
 /** The files for one icon in one format, as text, plus a ready-to-paste usage snippet. */
-export function iconSourceFiles(ad: AssetDefinition, format: SourceFormat): IconSource {
+export function iconSourceFiles(ad: AssetDefinition, format: SourceFormat, stored: Record<string, Float32Array> = {}): IconSource {
   const slug = ad.slug;
   switch (format) {
+    case "react-native": {
+      const name = pascal(slug);
+      const wav = soundLoopWav(ad, stored);
+      const files: SourceFile[] = [{ path: `${slug}.lottie.json`, content: JSON.stringify(exportLottie(ad)) }];
+      if (wav) files.push({ path: `${slug}.wav`, content: toBase64(wav), encoding: "base64" });
+      files.push({
+        path: `${name}.tsx`,
+        content: `// ${ad.name} — generated by DAOS. Motion is Lottie; the sound is one mixed loop, played in sync.
+import { DaosIcon, type DaosIconProps } from "${NATIVE_PACKAGES.reactNative}";
+
+const animation = require("./${slug}.lottie.json");
+${wav ? `const sound = require("./${slug}.wav");\n` : ""}
+export type ${name}Props = Omit<DaosIconProps, "animation" | "sound" | "durationMs" | "stillFrameMs">;
+
+export function ${name}(props: ${name}Props) {
+  return <DaosIcon animation={animation}${wav ? " sound={sound}" : ""} durationMs={${ad.timeline.duration}} stillFrameMs={${ad.a11y.reducedMotionFrame}} label=${JSON.stringify(ad.a11y.label)} {...props} />;
+}
+
+export default ${name};
+`,
+      });
+      return {
+        files,
+        needsPlayer: false,
+        setup: `npm install ${NATIVE_PACKAGES.reactNative} lottie-react-native expo-audio   (Expo: npx expo install lottie-react-native expo-audio)`,
+        usage: `import { ${name} } from "./icons/${name}";\n\n<${name} size={64} />   // tap to replay with sound; soundMode="always" plays it on every loop`,
+      };
+    }
+    case "flutter": {
+      const cls = `${pascal(slug)}Icon`;
+      const file = `${slug.replace(/-/g, "_")}_icon.dart`;
+      const wav = soundLoopWav(ad, stored);
+      const files: SourceFile[] = [{ path: `${slug}.lottie.json`, content: JSON.stringify(exportLottie(ad)) }];
+      if (wav) files.push({ path: `${slug}.wav`, content: toBase64(wav), encoding: "base64" });
+      files.push({
+        path: file,
+        content: `// ${ad.name} — generated by DAOS. Motion is Lottie; the sound is one mixed loop, played in sync.
+import 'package:flutter/widgets.dart';
+import 'package:${NATIVE_PACKAGES.flutter}/${NATIVE_PACKAGES.flutter}.dart';
+
+class ${cls} extends StatelessWidget {
+  const ${cls}({super.key, this.size = 64, this.autoplay = true, this.soundMode = DaosSoundMode.press});
+
+  final double size;
+  final bool autoplay;
+  final DaosSoundMode soundMode;
+
+  @override
+  Widget build(BuildContext context) => DaosIcon(
+        animation: ${dartString(`{{ICONS_DIR}}/${slug}.lottie.json`)},
+        sound: ${wav ? dartString(`{{ICONS_DIR}}/${slug}.wav`) : "null"},
+        duration: const Duration(milliseconds: ${ad.timeline.duration}),
+        stillFrame: const Duration(milliseconds: ${ad.a11y.reducedMotionFrame}),
+        label: ${dartString(ad.a11y.label)},
+        size: size,
+        autoplay: autoplay,
+        soundMode: soundMode,
+      );
+}
+`,
+      });
+      return {
+        files,
+        needsPlayer: false,
+        setup: `flutter pub add ${NATIVE_PACKAGES.flutter} lottie audioplayers, and list the icons folder under flutter: assets: in pubspec.yaml`,
+        usage: `import '{{ICONS_DIR_IMPORT}}/${file}';\n\n${cls}(size: 64)   // tap to replay with sound; soundMode: DaosSoundMode.always plays it on every loop`,
+      };
+    }
     case "react": {
       const r = exportReact(ad);
       const name = r.filename.replace(/\.tsx$/, "");

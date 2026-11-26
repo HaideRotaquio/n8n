@@ -1,6 +1,8 @@
 import { iconSourceFiles, SOURCE_FORMATS, type SourceFormat } from "@sb/export/source";
-import { authorizeApiDownload, getDb } from "@sb/db";
+import { loadStoredSound } from "@sb/audio";
+import { authorizeApiDownload, getDb, getSounds, storedSoundIds } from "@sb/db";
 import { apiError, apiStore, bearerLicense, ipHashFor } from "@/lib/dev-api";
+import { storageFor } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +32,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     const products = auth.products?.map((p) => ({ ...p, url: `${store.origin}/products/${p.slug}` }));
     return apiError(STATUS[auth.reason], auth.reason, auth.message, products ? { products } : {});
   }
-  const source = iconSourceFiles(auth.definition, format);
+  // Native formats carry a mixed sound loop, so recorded library sounds are loaded and mixed in.
+  const stored: Record<string, Float32Array> = {};
+  if (format === "react-native" || format === "flutter") {
+    const ids = storedSoundIds(auth.definition);
+    if (ids.length) {
+      const storage = storageFor(store.origin);
+      for (const snd of await getSounds(getDb(), ids)) {
+        const bytes = await storage.get(snd.storageKey);
+        if (bytes) stored[snd.id] = loadStoredSound(bytes);
+      }
+      if (ids.some((id) => !stored[id])) return apiError(503, "not_ready", "This icon's sound isn't available right now. Try again shortly.");
+    }
+  }
+  const source = iconSourceFiles(auth.definition, format, stored);
   const licenseNotice = `${auth.definition.name} (${slug}) — ${store.brand.name}, ${auth.license.licenseType} license ${auth.license.code} (${auth.license.productTitle}). Verify: ${store.origin}/licenses/verify?code=${auth.license.code}`;
   return Response.json(
     {

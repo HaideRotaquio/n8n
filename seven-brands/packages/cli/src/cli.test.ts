@@ -51,13 +51,24 @@ beforeAll(async () => {
     let body = "";
     for await (const c of req) body += c;
     const format = (JSON.parse(body || "{}") as { format?: string }).format ?? "react";
-    const files = evil ? [{ path: "../escape.txt", content: "x" }] : format === "react" ? [{ path: "FaceHappy.tsx", content: "export function FaceHappy() {}" }] : [{ path: `${found.slug}.svg`, content: "<svg/>" }];
+    const native = format === "react-native" || format === "flutter";
+    const files = evil
+      ? [{ path: "../escape.txt", content: "x" }]
+      : format === "react"
+        ? [{ path: "FaceHappy.tsx", content: "export function FaceHappy() {}" }]
+        : native
+          ? [
+              { path: `${found.slug}.wav`, content: Buffer.from("RIFF-fake-wav").toString("base64"), encoding: "base64" },
+              format === "flutter" ? { path: "face_happy_icon.dart", content: "DaosIcon(sound: '{{ICONS_DIR}}/face-happy.wav')" } : { path: "FaceHappy.tsx", content: "native" },
+            ]
+          : [{ path: `${found.slug}.svg`, content: "<svg/>" }];
     return send(200, {
       icon: { slug: found.slug, name: found.name, version: 1 },
       format,
       files,
       needsPlayer: format === "react",
-      usage: "<FaceHappy />",
+      usage: format === "flutter" ? "import '{{ICONS_DIR_IMPORT}}/face_happy_icon.dart';" : "<FaceHappy />",
+      setup: native ? "install the player" : undefined,
       license: { code, licenseType: "personal", productSlug: "faces", productTitle: "Faces Pack", notice: `${found.slug} — license ${code}`, termsUrl: "http://x/help/licenses" },
     });
   });
@@ -125,6 +136,40 @@ describe("add", () => {
   it("asks for a license when none is configured", async () => {
     const ctx = await ctxFor(await project(null));
     expect(await addIcon(ctx, "face-happy")).toMatchObject({ ok: false, code: "license_required" });
+  });
+});
+
+describe("native projects", () => {
+  it("detects React Native / Expo and writes binary sound files as bytes", async () => {
+    const dir = await project({ dependencies: { expo: "54", "react-native": "0.84" } });
+    const r = await addIcon(await ctxFor(dir, { MOODICONS_LICENSE: PACK }), "face-happy");
+    expect(r).toMatchObject({ ok: true, format: "react-native", iconsDir: path.join("src", "components", "icons"), setup: "install the player" });
+    expect((await readFile(path.join(dir, "src/components/icons/face-happy.wav"))).toString()).toBe("RIFF-fake-wav");
+  });
+
+  it("detects Flutter, fills asset paths and adds the folder to pubspec.yaml once", async () => {
+    const dir = await project(null);
+    const pubspec = "name: demo\n\ndependencies:\n  flutter:\n    sdk: flutter\n\nflutter:\n  uses-material-design: true\n";
+    await writeFile(path.join(dir, "pubspec.yaml"), pubspec);
+    const ctx = await ctxFor(dir, { MOODICONS_LICENSE: PACK });
+    const r = await addIcon(ctx, "face-happy");
+    expect(r).toMatchObject({ ok: true, format: "flutter", iconsDir: path.join("lib", "icons"), usage: "import 'icons/face_happy_icon.dart';" });
+    expect(r.setup).toContain("added lib/icons/ to pubspec.yaml");
+    expect(await readFile(path.join(dir, "lib/icons/face_happy_icon.dart"), "utf8")).toBe("DaosIcon(sound: 'lib/icons/face-happy.wav')");
+    const after = await readFile(path.join(dir, "pubspec.yaml"), "utf8");
+    expect(after).toContain("flutter:\n  assets:\n    - lib/icons/\n  uses-material-design: true");
+    await addIcon(ctx, "face-happy");
+    expect(await readFile(path.join(dir, "pubspec.yaml"), "utf8")).toBe(after);
+  });
+
+  it("appends to an existing assets list with its indentation", async () => {
+    const { ensureFlutterAssets } = await import("./project");
+    const dir = await project(null);
+    await writeFile(path.join(dir, "pubspec.yaml"), "name: demo\nflutter:\n    assets:\n        - images/\n    uses-material-design: true\n");
+    expect(await ensureFlutterAssets(dir, path.join(dir, "lib/icons"))).toBe("added");
+    expect(await readFile(path.join(dir, "pubspec.yaml"), "utf8")).toBe("name: demo\nflutter:\n    assets:\n        - lib/icons/\n        - images/\n    uses-material-design: true\n");
+    await writeFile(path.join(dir, "pubspec.yaml"), "name: demo\nflutter:\n  assets: [images/]\n");
+    expect(await ensureFlutterAssets(dir, path.join(dir, "lib/icons"))).toBe("manual");
   });
 });
 
