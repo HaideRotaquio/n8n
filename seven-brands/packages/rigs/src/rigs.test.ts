@@ -31,7 +31,7 @@ describe("rigs", () => {
 describe("launch catalog", async () => {
   const { launchCatalog } = await import("./launch");
   it.each(["moodicons", "sonicglyphs"])("%s plan references only rig assets, valid packs and the brand's licenses", (brand) => {
-    const slugs = new Set(all.filter((x) => x.ad.brand === brand).map((x) => x.ad.slug));
+    const slugs = new Set(all.filter((x) => x.ad.brand === brand && !RIGS[x.rig]!.preview).map((x) => x.ad.slug));
     const plan = launchCatalog(brand);
     expect(new Set(plan.map((p) => p.slug)).size).toBe(plan.length);
     for (const p of plan) {

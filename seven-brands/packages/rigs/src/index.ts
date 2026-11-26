@@ -20,6 +20,8 @@ export interface RigInfo {
   variants: string[];
   palettes: string[];
   build(variant: string, palette?: string): AssetDefinition;
+  /** Style previews not yet in the launch catalog (left out of the starter set and launch plan). */
+  preview?: boolean;
 }
 
 /** Registry used by the production factory ("rig" jobs need no AI and cost nothing). */
@@ -56,6 +58,24 @@ export const RIGS: Record<string, RigInfo> = {
     palettes: ["original"],
     build: (v) => buildChibi(parseChibiVariant(v)),
   },
+  "moodicons-face-3d@1": {
+    id: "moodicons-face-3d@1",
+    brand: "moodicons",
+    label: "Moodicons face — soft 3D",
+    variants: [...FACE_EXPRESSIONS],
+    palettes: Object.keys(FACE_PALETTES),
+    build: (v, p) => buildFace({ expression: v as (typeof FACE_EXPRESSIONS)[number], palette: (p ?? "classic") as FacePalette, style: "3d" }),
+    preview: true,
+  },
+  "moodicons-chibi-3d@1": {
+    id: "moodicons-chibi-3d@1",
+    brand: "moodicons",
+    label: "Moodicons Chibi Cast — soft 3D",
+    variants: [...CHIBI_VARIANTS],
+    palettes: ["original"],
+    build: (v) => buildChibi({ ...parseChibiVariant(v), style: "3d" }),
+    preview: true,
+  },
   "sonicglyphs-line@1": {
     id: "sonicglyphs-line@1",
     brand: "sonicglyphs",
@@ -68,5 +88,7 @@ export const RIGS: Record<string, RigInfo> = {
 
 /** The default (first-palette) asset for every variant of every rig: the starter catalog. */
 export function starterSet(): AssetDefinition[] {
-  return Object.values(RIGS).flatMap((rig) => rig.variants.map((v) => rig.build(v)));
+  return Object.values(RIGS)
+    .filter((rig) => !rig.preview)
+    .flatMap((rig) => rig.variants.map((v) => rig.build(v)));
 }

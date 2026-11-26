@@ -1,3 +1,4 @@
+import { sphereGloss, sphereShade } from "./soft3d";
 import type { AssetDefinition, Layer, SoundCue, Track } from "@sb/asset";
 import { finalize, heartPath, SPRING_SNAPPY, SPRING_SOFT, track } from "./util";
 
@@ -354,9 +355,10 @@ function motion(e: FaceExpression): MotionSpec {
 export interface FaceRigParams {
   expression: FaceExpression;
   palette?: FacePalette;
+  style?: "flat" | "3d";
 }
 
-export function buildFace({ expression, palette = "classic" }: FaceRigParams): AssetDefinition {
+export function buildFace({ expression, palette = "classic", style = "flat" }: FaceRigParams): AssetDefinition {
   const m = motion(expression);
   const meta = LABELS[expression];
   const faceGroup: Layer = {
@@ -365,6 +367,7 @@ export function buildFace({ expression, palette = "classic" }: FaceRigParams): A
     origin: [32, 58],
     children: [
       { id: "head", kind: "shape", shape: { type: "circle", cx: 32, cy: 32, r: 27 }, fill: { token: "face" }, stroke: ink, strokeWidth: 2.5 },
+      ...(style === "3d" ? [sphereShade("shade-head", 32, 32, 27), sphereGloss("gloss-head", 32, 32, 27)] : []),
       ...extras(expression).filter((l) => l.id.startsWith("blush") || l.id === "hat"),
       ...eyes(expression),
       ...mouth(expression),
@@ -373,12 +376,12 @@ export function buildFace({ expression, palette = "classic" }: FaceRigParams): A
   const floating = extras(expression).filter((l) => !l.id.startsWith("blush") && l.id !== "hat");
   // Face-level rotations pivot at the chin; scale pivots at the centre.
   if (m.tracks.some((t) => t.target === "face" && (t.property === "scale" || t.property === "scaleY"))) faceGroup.origin = [32, 46];
-  const slug = palette === "classic" ? `face-${expression}` : `face-${expression}-${palette}`;
+  const slug = `${palette === "classic" ? `face-${expression}` : `face-${expression}-${palette}`}${style === "3d" ? "-3d" : ""}`;
   return finalize({
     schema: "daos.asset/1",
     brand: "moodicons",
     slug,
-    name: palette === "classic" ? meta.name : `${meta.name} (${palette})`,
+    name: `${meta.name}${palette === "classic" ? "" : ` (${palette})`}${style === "3d" ? " (3D)" : ""}`,
     viewBox: [0, 0, 64, 64],
     tokens: { ...FACE_PALETTES[palette] },
     layers: [faceGroup, ...floating],
@@ -389,8 +392,8 @@ export function buildFace({ expression, palette = "classic" }: FaceRigParams): A
       { on: "click", action: "restart" },
     ],
     a11y: { label: meta.label, reducedMotionFrame: m.reducedMotionFrame },
-    tags: [...meta.tags, "face", "emoji", palette],
+    tags: [...meta.tags, "face", "emoji", ...(style === "3d" ? ["3d"] : []), palette],
     category: meta.category,
-    provenance: { method: "rig", rig: "moodicons-face@1" },
+    provenance: { method: "rig", rig: style === "3d" ? "moodicons-face-3d@1" : "moodicons-face@1" },
   });
 }

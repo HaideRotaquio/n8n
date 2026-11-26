@@ -2,6 +2,12 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.5.3] — 2026-11-26 — Semi-3D style (preview)
+
+### Added
+- **Soft 3D style** for Moodicons faces and every chibi character (`packages/rigs/src/soft3d.ts`): layered shade crescents opposite a top-left light (a gradient-like falloff), a glossy highlight, a shadow where the head meets the body and a shine across the hair. Built only from shapes, opacity and transforms, so the web player, animated SVG, Lottie, React Native and Flutter all show it; every 3D icon passes QA and the Lottie pixel comparison.
+- New preview rigs `moodicons-face-3d@1` (15 × 4 colour styles) and `moodicons-chibi-3d@1` (544), slugs ending in `-3d`. Marked `preview`: not in the starter set or the launch plan until it's decided how 3D is sold.
+
 ## [0.5.2] — 2026-11-26 — More chibi emotions
 
 ### Added
