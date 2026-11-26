@@ -1,4 +1,4 @@
-import { parseAssetDefinition, walkLayers, type AssetDefinition, type AssetDefinitionInput, type Easing, type Keyframe, type Layer, type Track } from "@sb/asset";
+import { parseAssetDefinition, walkLayers, type AssetDefinition, type AssetDefinitionInput, type Easing, type Gradient, type Keyframe, type Layer, type Track } from "@sb/asset";
 
 export const r = (n: number) => Math.round(n * 100) / 100;
 
@@ -22,15 +22,24 @@ export function track(target: string, property: Track["property"], keyframes: [n
 }
 
 /** Removes tokens no layer references (keeps QA clean and the customizer focused). */
-export function pruneTokens(layers: Layer[], tokens: Record<string, string>): Record<string, string> {
+export function pruneTokens(layers: Layer[], tokens: Record<string, string>, gradients: Gradient[] = []): Record<string, string> {
   const used = new Set<string>();
+  const usedGradients = new Set<string>();
   for (const l of walkLayers(layers)) {
     if (l.kind !== "shape") continue;
-    for (const p of [l.fill, l.stroke]) if (p && typeof p === "object") used.add(p.token);
+    for (const p of [l.fill, l.stroke]) {
+      if (p && typeof p === "object") "gradient" in p ? usedGradients.add(p.gradient) : used.add(p.token);
+    }
   }
+  for (const g of gradients) if (usedGradients.has(g.id)) for (const st of g.stops) if (typeof st.color === "object") used.add(st.color.token);
   return Object.fromEntries(Object.entries(tokens).filter(([k]) => used.has(k)));
 }
 
 export function finalize(input: AssetDefinitionInput): AssetDefinition {
-  return parseAssetDefinition({ ...input, tokens: pruneTokens(input.layers as Layer[], input.tokens) });
+  const gradients = (input.gradients ?? []) as Gradient[];
+  const layers = input.layers as Layer[];
+  // Unused gradients are dropped too, like unused tokens.
+  const used = new Set([...walkLayers(layers)].flatMap((l) => (l.kind === "shape" && l.fill && typeof l.fill === "object" && "gradient" in l.fill ? [l.fill.gradient] : [])));
+  const kept = gradients.filter((g) => used.has(g.id));
+  return parseAssetDefinition({ ...input, gradients: kept, tokens: pruneTokens(layers, input.tokens, kept) });
 }

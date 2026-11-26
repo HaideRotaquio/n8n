@@ -5,6 +5,7 @@ import {
   brand,
   checkoutSession,
   customer,
+  asset,
   download,
   entitlement,
   expense,
@@ -646,6 +647,42 @@ export async function revenueSummary(db: Database, scope: BrandScope, since: Dat
     .innerJoin(brand, eq(brand.id, order.brandId))
     .where(and(eq(order.testMode, false), sql`${order.provider} <> 'free'`, gte(order.paidAt, since), scope === "all" ? undefined : inArray(order.brandId, scope)))
     .groupBy(brand.slug, order.currency);
+}
+
+export interface StyleDemandRow {
+  brandSlug: string;
+  flatDownloads: number;
+  threeDDownloads: number;
+  /** Customers who downloaded at least one 3D icon / any icon that comes in both styles. */
+  customers3d: number;
+  customers: number;
+}
+
+/**
+ * Flat vs clay-3D demand: downloads of icons that exist in both styles (a 3D icon's slug is its flat twin's + "-3d"),
+ * counted only for live purchases. Packs include both styles, so what customers actually download is the signal.
+ */
+export async function styleDemand(db: Database, scope: BrandScope, since: Date): Promise<StyleDemandRow[]> {
+  if (scope !== "all" && scope.length === 0) return [];
+  const is3d = sql`${asset.slug} like '%-3d'`;
+  const hasTwin = sql`(${is3d} or exists (select 1 from asset a2 where a2.brand_id = ${asset.brandId} and a2.slug = ${asset.slug} || '-3d'))`;
+  return db
+    .select({
+      brandSlug: brand.slug,
+      flatDownloads: sql<number>`count(*) filter (where not (${is3d}))::int`,
+      threeDDownloads: sql<number>`count(*) filter (where ${is3d})::int`,
+      customers3d: sql<number>`count(distinct ${download.customerId}) filter (where ${is3d})::int`,
+      customers: sql<number>`count(distinct ${download.customerId})::int`,
+    })
+    .from(download)
+    .innerJoin(asset, eq(asset.id, download.assetId))
+    .innerJoin(brand, eq(brand.id, asset.brandId))
+    .innerJoin(entitlement, eq(entitlement.id, download.entitlementId))
+    .innerJoin(license, eq(license.id, entitlement.licenseId))
+    .innerJoin(orderItem, eq(orderItem.id, license.orderItemId))
+    .innerJoin(order, eq(order.id, orderItem.orderId))
+    .where(and(eq(order.testMode, false), gte(download.createdAt, since), hasTwin, scope === "all" ? undefined : inArray(asset.brandId, scope)))
+    .groupBy(brand.slug);
 }
 
 /** Everything we hold about a customer, for data-access requests (GDPR / PH Data Privacy Act). */

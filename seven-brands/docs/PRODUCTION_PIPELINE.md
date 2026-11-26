@@ -10,6 +10,7 @@ Every product is a versioned JSON document (`asset_version.definition`, immutabl
 |---|---|
 | `viewBox`, `layers` | Tree of groups and shapes (path, circle, ellipse, rect, line, polygon, polyline). Path data and points are validated character-by-character. |
 | `tokens` | Named `#RRGGBB` colors; layers reference them (`{ token: "primary" }`). Customers can change them. |
+| `gradients` | Optional linear/radial gradients (2–8 stops; stop colours may be tokens; per-stop opacity) in the same coordinates as the shapes that use them. Fills reference them with `{ gradient: "id" }`; strokes stay solid. Rendered as SVG `<defs>` (ids prefixed per render/player), and as Lottie `gf` fills with opacity ramps — checked pixel-for-pixel against lottie-web. Used by the clay 3D style (`packages/rigs/src/soft3d.ts`). Definitions saved before gradients existed simply have none. |
 | `timeline` | Duration, loop (forever / N / once), tracks (translate, rotate, scale, scaleX/Y, opacity) with keyframes and easing (linear, ease presets, cubic-bezier, physical springs), and named markers. |
 | `sounds` | Cues at a time or marker, optionally placed in stereo (`pan` −1…1 or `panFrom: <layer>`): `synth:<preset>` (procedural, owned) or `snd_…` (stored sound from the library, with a license record). |
 | `interactions` | load / hover / click / focus / inView → play, restart, toggle, playSound. |

@@ -7,7 +7,7 @@ import {
   type LayerState,
   type TrackIndex,
 } from "./motion";
-import { resolvePaint } from "./helpers";
+import { resolvePaint, resolveStopColor } from "./helpers";
 import type { AssetDefinition, Layer, ShapeLayer } from "./schema";
 
 /**
@@ -28,7 +28,11 @@ export type SvgTag =
   | "polygon"
   | "polyline"
   | "title"
-  | "style";
+  | "style"
+  | "defs"
+  | "linearGradient"
+  | "radialGradient"
+  | "stop";
 
 export interface VNode {
   tag: SvgTag;
@@ -67,7 +71,7 @@ export function cssTransform(s: LayerState, origin: [number, number]): string {
   );
 }
 
-function shapeNode(layer: ShapeLayer, tokens: Record<string, string>): VNode {
+function shapeNode(layer: ShapeLayer, tokens: Record<string, string>, gradientPrefix = ""): VNode {
   const s = layer.shape;
   const attrs: Record<string, string> = {};
   switch (s.type) {
@@ -92,7 +96,7 @@ function shapeNode(layer: ShapeLayer, tokens: Record<string, string>): VNode {
       attrs.points = s.points;
       break;
   }
-  const fill = resolvePaint(layer.fill, tokens);
+  const fill = resolvePaint(layer.fill, tokens, gradientPrefix);
   const stroke = resolvePaint(layer.stroke, tokens);
   // SVG default fill is black; make "no fill specified" explicit only for lines (which can't be filled).
   if (fill !== undefined) attrs.fill = fill;
@@ -114,6 +118,30 @@ export interface RenderOptions {
   title?: boolean;
   /** Background color painted behind the artwork (exports like MP4 need one). */
   background?: string;
+  /** Prefix for gradient element ids. Defaults to the asset slug; give each copy on one page its own prefix. */
+  idPrefix?: string;
+}
+
+const gradientPrefixFor = (ad: AssetDefinition, opts: RenderOptions) => `${opts.idPrefix ?? `g-${ad.slug}`}-`;
+
+/** <defs> with the asset's gradients (user-space coordinates), or null when it has none. */
+function defsNode(ad: AssetDefinition, tokens: Record<string, string>, prefix: string): VNode | null {
+  const gradients = ad.gradients ?? []; // definitions saved before gradients existed have no list
+  if (!gradients.length) return null;
+  return {
+    tag: "defs",
+    attrs: {},
+    children: gradients.map((g): VNode => {
+      const stopNodes: VNode[] = g.stops.map((st) => ({
+        tag: "stop",
+        attrs: { offset: fmt(st.offset), "stop-color": resolveStopColor(st.color, tokens), ...(st.opacity !== undefined ? { "stop-opacity": fmt(st.opacity) } : {}) },
+        children: [],
+      }));
+      return g.type === "linear"
+        ? { tag: "linearGradient", attrs: { id: `${prefix}${g.id}`, gradientUnits: "userSpaceOnUse", x1: fmt(g.x1), y1: fmt(g.y1), x2: fmt(g.x2), y2: fmt(g.y2) }, children: stopNodes }
+        : { tag: "radialGradient", attrs: { id: `${prefix}${g.id}`, gradientUnits: "userSpaceOnUse", cx: fmt(g.cx), cy: fmt(g.cy), r: fmt(g.r) }, children: stopNodes };
+    }),
+  };
 }
 
 export function mergeTokens(ad: AssetDefinition, overrides?: Record<string, string>): Record<string, string> {
@@ -145,10 +173,11 @@ function backgroundNode(ad: AssetDefinition, color: string): VNode {
 /** One static frame at timeline time `t` (ms). */
 export function renderFrame(ad: AssetDefinition, t: number, opts: RenderOptions = {}): VNode {
   const tokens = mergeTokens(ad, opts.tokens);
+  const gp = gradientPrefixFor(ad, opts);
   const idx = indexTracks(ad.timeline);
   const build = (layer: Layer): VNode => {
     const state = layerState(layer, idx, t);
-    const inner = layer.kind === "group" ? { tag: "g" as const, attrs: {}, children: layer.children.map(build) } : shapeNode(layer, tokens);
+    const inner = layer.kind === "group" ? { tag: "g" as const, attrs: {}, children: layer.children.map(build) } : shapeNode(layer, tokens, gp);
     const tr = svgTransform(state, layerOrigin(layer, ad));
     const needsWrap = tr !== undefined || state.opacity !== 1;
     if (!needsWrap) return { ...inner, attrs: { ...inner.attrs, "data-layer": layer.id } };
@@ -159,6 +188,8 @@ export function renderFrame(ad: AssetDefinition, t: number, opts: RenderOptions 
   };
   const children: VNode[] = [];
   if (opts.title !== false) children.push({ tag: "title", attrs: {}, children: [ad.a11y.label] } as VNode);
+  const defs = defsNode(ad, tokens, gp);
+  if (defs) children.push(defs);
   if (opts.background) children.push(backgroundNode(ad, opts.background));
   children.push(...ad.layers.map(build));
   return { tag: "svg", attrs: rootAttrs(ad, opts), children };
@@ -185,6 +216,7 @@ export function renderAnimatedSvg(ad: AssetDefinition, opts: AnimatedSvgOptions 
   const animated = animatedLayerIds(ad);
   const idx: TrackIndex = indexTracks(ad.timeline);
   const tokens = mergeTokens(ad, opts.tokens);
+  const gp = gradientPrefixFor(ad, opts);
   const restT = ad.a11y.reducedMotionFrame;
   const frames = Math.max(2, Math.round((duration / 1000) * fps) + 1);
   const css: string[] = [];
@@ -193,7 +225,7 @@ export function renderAnimatedSvg(ad: AssetDefinition, opts: AnimatedSvgOptions 
 
   const build = (layer: Layer): VNode => {
     const inner =
-      layer.kind === "group" ? { tag: "g" as const, attrs: {} as Record<string, string>, children: layer.children.map(build) } : shapeNode(layer, tokens);
+      layer.kind === "group" ? { tag: "g" as const, attrs: {} as Record<string, string>, children: layer.children.map(build) } : shapeNode(layer, tokens, gp);
     const origin = layerOrigin(layer, ad);
     const rest = layerState(layer, idx, restT);
     const attrs: Record<string, string> = { "data-layer": layer.id };
@@ -234,6 +266,8 @@ export function renderAnimatedSvg(ad: AssetDefinition, opts: AnimatedSvgOptions 
   const children: VNode[] = [];
   if (opts.title !== false) children.push({ tag: "title", attrs: {}, children: [ad.a11y.label] });
   children.push({ tag: "style", attrs: {}, children: [css.join("")] });
+  const defs = defsNode(ad, tokens, gp);
+  if (defs) children.push(defs);
   if (opts.background) children.push(backgroundNode(ad, opts.background));
   children.push(...layers);
   return { tag: "svg", attrs: rootAttrs(ad, opts), children };
@@ -271,13 +305,16 @@ export function renderAnimatedSvgString(ad: AssetDefinition, opts?: AnimatedSvgO
  */
 export function renderStructure(ad: AssetDefinition, opts: RenderOptions = {}): VNode {
   const tokens = mergeTokens(ad, opts.tokens);
+  const gp = gradientPrefixFor(ad, opts);
   const build = (layer: Layer): VNode => ({
     tag: "g",
     attrs: { "data-layer": layer.id },
-    children: [layer.kind === "group" ? { tag: "g", attrs: {}, children: layer.children.map(build) } : shapeNode(layer, tokens)],
+    children: [layer.kind === "group" ? { tag: "g", attrs: {}, children: layer.children.map(build) } : shapeNode(layer, tokens, gp)],
   });
   const children: VNode[] = [];
   if (opts.title !== false) children.push({ tag: "title", attrs: {}, children: [ad.a11y.label] });
+  const defs = defsNode(ad, tokens, gp);
+  if (defs) children.push(defs);
   if (opts.background) children.push(backgroundNode(ad, opts.background));
   children.push(...ad.layers.map(build));
   return { tag: "svg", attrs: rootAttrs(ad, opts), children };

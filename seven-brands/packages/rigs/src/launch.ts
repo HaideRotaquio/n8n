@@ -24,6 +24,12 @@ const facePalettes = Object.keys(FACE_PALETTES) as FacePalette[];
 const symbolPalettes = Object.keys(SYMBOL_PALETTES) as SymbolPalette[];
 const glyphPalettes = Object.keys(GLYPH_PALETTES) as GlyphPalette[];
 
+/**
+ * Faces and chibi characters ship in both styles at one price, and the admin's "Style demand" panel shows which
+ * style customers download. That evidence, not a guess, decides any later 3D pricing (see docs/STYLE_DEMAND.md).
+ */
+const bothStyles = (slug: (style: "flat" | "3d") => string) => [slug("flat"), slug("3d")];
+
 const MOOD_SINGLE = { personal: 300, commercial: 900, team: 1900, agency: 3900 };
 const MOOD_BUNDLE = { personal: 1900, commercial: 4900, team: 9900, agency: 19900 };
 const SONIC_SINGLE = { personal: 400, commercial: 1200, team: 2900, agency: 5900, enterprise: 14900 };
@@ -35,9 +41,9 @@ function moodicons(): ProductPlan[] {
     return {
       slug: base.slug,
       title: base.name,
-      description: `${base.a11y.label}. Includes all ${facePalettes.length} color styles (${facePalettes.join(", ")}) with matching sound.`,
+      description: `${base.a11y.label}. Includes all ${facePalettes.length} color styles (${facePalettes.join(", ")}), each in flat and clay 3D, with matching sound.`,
       kind: "pack",
-      assetSlugs: facePalettes.map((p) => buildFace({ expression: e, palette: p }).slug),
+      assetSlugs: facePalettes.flatMap((p) => bothStyles((style) => buildFace({ expression: e, palette: p, style }).slug)),
       prices: MOOD_SINGLE,
     };
   });
@@ -56,13 +62,13 @@ function moodicons(): ProductPlan[] {
     const ad = buildBawal({ sign: b });
     return { slug: ad.slug, title: ad.name, description: `${ad.a11y.label}. Animated sign with sound; no words in the artwork, so it works in any language.`, kind: "single", assetSlugs: [ad.slug], prices: MOOD_SINGLE };
   });
-  const chibiSlugs = (c: (typeof CHIBI_CHARACTERS)[number]) => CHIBI_REACTIONS.map((r) => buildChibi({ character: c, reaction: r }).slug);
+  const chibiSlugs = (c: (typeof CHIBI_CHARACTERS)[number]) => CHIBI_REACTIONS.flatMap((r) => bothStyles((style) => buildChibi({ character: c, reaction: r, style }).slug));
   const chibi = CHIBI_CHARACTERS.map((c): ProductPlan => {
     const { name, role } = CHIBI_NAMES[c];
     return {
       slug: `chibi-${c}-pack`,
       title: `Chibi ${name} — Reactions Pack`,
-      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (${CHIBI_REACTIONS.map((r) => CHIBI_REACTION_TITLES[r].toLowerCase()).join(", ")}), each with its own sound. An original Moodicons character from the ${CHIBI_CREW_TITLES[CHIBI_NAMES[c].crew]}.`,
+      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (${CHIBI_REACTIONS.map((r) => CHIBI_REACTION_TITLES[r].toLowerCase()).join(", ")}), each with its own sound, in flat and clay 3D. An original Moodicons character from the ${CHIBI_CREW_TITLES[CHIBI_NAMES[c].crew]}.`,
       kind: "pack",
       assetSlugs: chibiSlugs(c),
       prices: { personal: 900, commercial: 2900, team: 5900, agency: 11900 },
@@ -74,7 +80,7 @@ function moodicons(): ProductPlan[] {
       return {
         slug: `chibi-${crew}-bundle`,
         title: `Chibi ${CHIBI_CREW_TITLES[crew]} Bundle`,
-        description: `The whole ${CHIBI_CREW_TITLES[crew]}: ${members.map((c) => CHIBI_NAMES[c].name).join(", ")} — ${members.length * CHIBI_REACTIONS.length} animated reactions with sound.`,
+        description: `The whole ${CHIBI_CREW_TITLES[crew]}: ${members.map((c) => CHIBI_NAMES[c].name).join(", ")} — ${members.length * CHIBI_REACTIONS.length} animated reactions with sound, each in flat and clay 3D.`,
         kind: "pack",
         assetSlugs: members.flatMap(chibiSlugs),
         prices: MOOD_BUNDLE,
@@ -93,17 +99,17 @@ function moodicons(): ProductPlan[] {
     {
       slug: "free-starter-pack",
       title: "Free Starter Pack",
-      description: "Three Moodicons to try in your next post or project: Happy, Heart Eyes and a Pulsing Heart. Free for personal use.",
+      description: "Three Moodicons to try in your next post or project: Happy, Heart Eyes (both in flat and clay 3D) and a Pulsing Heart. Free for personal use.",
       kind: "pack",
-      assetSlugs: [buildFace({ expression: "happy" }).slug, buildFace({ expression: "love" }).slug, buildSymbol({ symbol: "heart" }).slug],
+      assetSlugs: [...bothStyles((style) => buildFace({ expression: "happy", style }).slug), ...bothStyles((style) => buildFace({ expression: "love", style }).slug), buildSymbol({ symbol: "heart" }).slug],
       prices: { personal: 0 },
     },
     {
       slug: "all-faces-bundle",
       title: "All Faces Bundle",
-      description: `Every Moodicons face: ${FACE_EXPRESSIONS.length} expressions in ${facePalettes.length} color styles (${FACE_EXPRESSIONS.length * facePalettes.length} animated icons with sound).`,
+      description: `Every Moodicons face: ${FACE_EXPRESSIONS.length} expressions in ${facePalettes.length} color styles, flat and clay 3D (${FACE_EXPRESSIONS.length * facePalettes.length * 2} animated icons with sound).`,
       kind: "pack",
-      assetSlugs: FACE_EXPRESSIONS.flatMap((e) => facePalettes.map((p) => buildFace({ expression: e, palette: p }).slug)),
+      assetSlugs: FACE_EXPRESSIONS.flatMap((e) => facePalettes.flatMap((p) => bothStyles((style) => buildFace({ expression: e, palette: p, style }).slug))),
       prices: MOOD_BUNDLE,
     },
     {
@@ -160,7 +166,7 @@ export function launchCatalog(brandSlug: string): ProductPlan[] {
 
 /** Rig jobs (rig id + palettes) needed so every asset in the launch catalog exists. */
 export function launchRigJobs(brandSlug: string): { rig: string; palettes: string[] }[] {
-  if (brandSlug === "moodicons") return [{ rig: "moodicons-face@1", palettes: facePalettes }, { rig: "moodicons-symbols@1", palettes: symbolPalettes }, { rig: "moodicons-bawal@1", palettes: ["classic"] }, { rig: "moodicons-chibi@1", palettes: ["original"] }];
+  if (brandSlug === "moodicons") return [{ rig: "moodicons-face@1", palettes: facePalettes }, { rig: "moodicons-symbols@1", palettes: symbolPalettes }, { rig: "moodicons-bawal@1", palettes: ["classic"] }, { rig: "moodicons-chibi@1", palettes: ["original"] }, { rig: "moodicons-face-3d@1", palettes: facePalettes }, { rig: "moodicons-chibi-3d@1", palettes: ["original"] }];
   if (brandSlug === "sonicglyphs") return [{ rig: "sonicglyphs-line@1", palettes: glyphPalettes }];
   return [];
 }

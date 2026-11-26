@@ -2,6 +2,17 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.6.0] — 2026-11-26 — Gradients and clay 3D
+
+### Added
+- **Gradient fills in the engine**: an asset can define linear and radial gradients (token stop colours, per-stop opacity) and use them as fills. Supported by the schema, QA (unknown/unused gradients), the SVG renderer and animated SVG (`<defs>`, ids prefixed per render), the browser player and `<daos-asset>` (its validator checks gradients; each player instance gets its own ids), and the Lottie exporter (`gf` fills with opacity ramps, so React Native and Flutter get them too). A dedicated lottie-web pixel test covers linear and radial gradients on a moving, rotating layer.
+- **Clay 3D style** rebuilt on gradients: per-volume clay light on heads and torsos, one scene light across hair, hats and accessories, a soft specular spot and blurred contact shadows. Every 3D face and character passes QA and the Lottie pixel comparison.
+- **Both styles in every pack** (faces and chibi characters), and an admin **Style demand** panel with a tested decision rule (`styleVerdict`) that recommends 3D pricing from live download data; see `docs/STYLE_DEMAND.md`.
+- Packs may hold up to 400 icons (chibi crew bundles now include both styles).
+
+### Fixed
+- Definitions saved before gradients existed render and export normally (no `gradients` list is treated as none).
+
 ## [0.5.3] — 2026-11-26 — Semi-3D style (preview)
 
 ### Added

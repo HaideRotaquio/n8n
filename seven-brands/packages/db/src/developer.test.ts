@@ -16,6 +16,7 @@ import {
   revokeLicense,
   saveAssetDefinition,
   searchPublishedIcons,
+  styleDemand,
   upsertPrice,
 } from "./index";
 import { user } from "./schema";
@@ -48,11 +49,11 @@ async function product(slug: string, assetIds: string[], opts: { cents?: number;
   return p;
 }
 
-async function buy(productSlug: string) {
+async function buy(productSlug: string, live = false) {
   const userId = newId("usr");
   await h.db.insert(user).values({ id: userId, email: `${userId}@example.com`, name: "Grace Hopper" });
   const c = await ensureCustomer(h.db, userId, moodiconsId);
-  const { session } = await createCheckoutSession(h.db, { brandId: moodiconsId, customerId: c.id, productSlug, licenseType: "personal", provider: "test", testMode: true });
+  const { session } = await createCheckoutSession(h.db, { brandId: moodiconsId, customerId: c.id, productSlug, licenseType: "personal", provider: "test", testMode: !live });
   const r = await fulfillPaidOrder(h.db, {
     provider: "test",
     providerOrderId: `t_${session.id}`,
@@ -61,10 +62,10 @@ async function buy(productSlug: string) {
     subtotalCents: session.amountCents,
     taxCents: 0,
     totalCents: session.amountCents,
-    testMode: true,
+    testMode: !live,
     paidAt: new Date(),
   });
-  if (r.status !== "fulfilled") throw new Error("not fulfilled");
+  if (r.status !== "fulfilled") throw new Error(`not fulfilled: ${JSON.stringify(r)}`);
   return r.license;
 }
 
@@ -127,5 +128,23 @@ describe("developer API", () => {
     expect((await authorizeApiDownload(h.db, { brandId: moodiconsId, code: lic.code, assetSlug: "dev-wave", limits })).ok).toBe(true);
     expect((await authorizeApiDownload(h.db, { brandId: moodiconsId, code: lic.code, assetSlug: "dev-cat", limits })).ok).toBe(true);
     expect(await authorizeApiDownload(h.db, { brandId: moodiconsId, code: lic.code, assetSlug: "dev-cat", limits })).toMatchObject({ ok: false, reason: "rate_limited" });
+  });
+
+  it("measures flat vs 3D demand from live purchases only", async () => {
+    const flat = await makeAsset("dev-kai-cool", { name: "Kai Cool" });
+    const d3 = await makeAsset("dev-kai-cool-3d", { name: "Kai Cool (3D)" });
+    await product("dev-styles-pack", [flat.asset.id, d3.asset.id]);
+    const live1 = await buy("dev-styles-pack", true);
+    const live2 = await buy("dev-styles-pack", true);
+    const test = await buy("dev-styles-pack");
+    const get = (code: string, slug: string) => authorizeApiDownload(h.db, { brandId: moodiconsId, code, assetSlug: slug });
+    expect((await get(live1.code, "dev-kai-cool-3d")).ok).toBe(true);
+    expect((await get(live1.code, "dev-kai-cool")).ok).toBe(true);
+    expect((await get(live2.code, "dev-kai-cool-3d")).ok).toBe(true);
+    expect((await get(test.code, "dev-kai-cool")).ok).toBe(true); // test purchase: not counted
+    expect((await get(live1.code, "dev-kai-cool-3d")).ok).toBe(true);
+    const rows = await styleDemand(h.db, "all", new Date(Date.now() - 3600_000));
+    expect(rows.find((r) => r.brandSlug === "moodicons")).toEqual({ brandSlug: "moodicons", flatDownloads: 1, threeDDownloads: 3, customers3d: 2, customers: 2 });
+    expect(await styleDemand(h.db, [sonicId], new Date(0))).toEqual([]);
   });
 });

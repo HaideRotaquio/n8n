@@ -57,8 +57,12 @@ export function buildDom(node: VNode | string, doc: Document): Node {
 
 const LOOKAHEAD_MS = 120;
 
+/** Each player gets its own gradient id prefix, so copies on one page never share <defs>. */
+let playerInstances = 0;
+
 export class AssetPlayer {
   readonly svg: SVGSVGElement;
+  private readonly idPrefix = `daos${++playerInstances}`;
   private ad: AssetDefinition;
   private opts: PlayerOptions;
   private idx: TrackIndex;
@@ -78,7 +82,7 @@ export class AssetPlayer {
     this.opts = { speed: 1, muted: true, respectReducedMotion: true, ...opts };
     this.idx = indexTracks(ad.timeline);
     const doc = (host as Node).ownerDocument ?? document;
-    this.svg = buildDom(renderStructure(ad, { tokens: opts.tokens, size: opts.size, background: opts.background }), doc) as SVGSVGElement;
+    this.svg = buildDom(renderStructure(ad, { tokens: opts.tokens, size: opts.size, background: opts.background, idPrefix: this.idPrefix }), doc) as SVGSVGElement;
     this.svg.style.display = "block";
     // Fill the host unless an explicit pixel size was requested; the host decides the size.
     if (opts.size === undefined) this.svg.style.width = "100%";
@@ -239,7 +243,7 @@ export class AssetPlayer {
   setTokens(tokens: Record<string, string>) {
     this.opts.tokens = tokens;
     const t = localTime(this.ad.timeline, this.elapsed);
-    const fresh = buildDom(renderStructure(this.ad, { tokens, size: this.opts.size, background: this.opts.background }), this.svg.ownerDocument) as SVGSVGElement;
+    const fresh = buildDom(renderStructure(this.ad, { tokens, size: this.opts.size, background: this.opts.background, idPrefix: this.idPrefix }), this.svg.ownerDocument) as SVGSVGElement;
     this.svg.replaceChildren(...Array.from(fresh.childNodes));
     this.bindLayers();
     this.render(t);

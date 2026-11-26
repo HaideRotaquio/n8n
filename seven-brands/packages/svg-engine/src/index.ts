@@ -1,4 +1,4 @@
-import { Layer, PathData, PointList, type Paint, type ShapeLayer } from "@sb/asset";
+import { Layer, PathData, PointList, type FillPaint, type Paint, type ShapeLayer } from "@sb/asset";
 import type { ChildNode, Element } from "domhandler";
 import { parseDocument } from "htmlparser2";
 
@@ -334,10 +334,11 @@ export function importSvg(source: string, opts: ImportOptions = {}): ImportResul
       tokens[t] = c;
       byColor.set(c, t);
     });
-    const tokenize = (p: Paint | undefined): Paint | undefined =>
+    // Imported SVGs never carry gradient fills (the importer flattens paint to solid colours).
+    const tokenize = <P extends FillPaint>(p: P | undefined): P | Paint | undefined =>
       typeof p === "string" && p !== "none" && byColor.has(p) ? { token: byColor.get(p)! } : p;
     const walk = (ls: Layer[]): Layer[] =>
-      ls.map((l) => (l.kind === "group" ? { ...l, children: walk(l.children) } : { ...l, fill: tokenize(l.fill), stroke: tokenize(l.stroke) }));
+      ls.map((l) => (l.kind === "group" ? { ...l, children: walk(l.children) } : { ...l, fill: tokenize(l.fill), stroke: tokenize(l.stroke) as Paint | undefined }));
     layers = walk(layers);
   }
 

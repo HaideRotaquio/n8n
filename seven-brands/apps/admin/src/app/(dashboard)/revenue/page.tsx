@@ -1,6 +1,6 @@
 import { commerceFromEnv } from "@sb/commerce";
-import { brandsWith, can } from "@sb/core";
-import { getDb, listWebhookEvents, revenueSummary } from "@sb/db";
+import { brandsWith, can, styleVerdict } from "@sb/core";
+import { getDb, listWebhookEvents, revenueSummary, styleDemand } from "@sb/db";
 import { Badge, Card, EmptyState, Notice, PageHeader, Stat, Table } from "@sb/ui";
 import { money } from "@/lib/money";
 import { requirePageStaff } from "@/lib/server";
@@ -13,7 +13,7 @@ export default async function RevenuePage() {
   const scope = brandsWith(staff.grants, "finance.read");
   const since30 = new Date(Date.now() - 30 * 86_400_000);
   const since365 = new Date(Date.now() - 365 * 86_400_000);
-  const [month, year] = await Promise.all([revenueSummary(db, scope, since30), revenueSummary(db, scope, since365)]);
+  const [month, year, styles] = await Promise.all([revenueSummary(db, scope, since30), revenueSummary(db, scope, since365), styleDemand(db, scope, since30)]);
   const usd = (rows: typeof month) => rows.filter((r) => r.currency === "USD");
   const sum = (rows: typeof month, k: "grossCents" | "taxCents" | "feeCents" | "refundedCents") => usd(rows).reduce((s, r) => s + r[k], 0);
   const net = (rows: typeof month) => sum(rows, "grossCents") - sum(rows, "taxCents") - sum(rows, "feeCents") - sum(rows, "refundedCents");
@@ -40,6 +40,34 @@ export default async function RevenuePage() {
                 <td className="px-4 py-2 font-medium">{money(r.grossCents - r.taxCents - r.feeCents - r.refundedCents, r.currency)}</td>
               </tr>
             ))}
+          </Table>
+        )}
+      </Card>
+      <Card title="Style demand: flat vs 3D, last 30 days" className="mb-6">
+        <p className="mb-3 text-sm text-[var(--color-muted-text)]">
+          Faces and chibi characters ship in both styles in every pack. This counts which one customers download (live purchases only) and turns it into a recommendation.
+        </p>
+        {styles.length === 0 ? (
+          <EmptyState title="No downloads yet">{styleVerdict(0, 0, 0).message}</EmptyState>
+        ) : (
+          <Table head={["Brand", "Flat", "3D", "3D share", "Customers", "Recommendation"]}>
+            {styles.map((r) => {
+              const total = r.flatDownloads + r.threeDDownloads;
+              const v = styleVerdict(r.flatDownloads, r.threeDDownloads, r.customers);
+              return (
+                <tr key={r.brandSlug}>
+                  <td className="px-4 py-2">{r.brandSlug}</td>
+                  <td className="px-4 py-2 tabular-nums">{r.flatDownloads}</td>
+                  <td className="px-4 py-2 tabular-nums">{r.threeDDownloads}</td>
+                  <td className="px-4 py-2 tabular-nums">{total ? `${Math.round((r.threeDDownloads / total) * 100)}%` : "—"}</td>
+                  <td className="px-4 py-2 tabular-nums">{r.customers3d} of {r.customers} chose 3D</td>
+                  <td className="px-4 py-2">
+                    <Badge tone={v.kind === "collecting" ? "neutral" : v.kind === "premium-3d" ? "success" : v.kind === "both" ? "info" : "warning"}>{v.kind === "collecting" ? "Collecting" : v.kind === "premium-3d" ? "3D leads" : v.kind === "both" ? "Both valued" : "Flat leads"}</Badge>
+                    <span className="ml-2 text-xs text-[var(--color-muted-text)]">{v.message}</span>
+                  </td>
+                </tr>
+              );
+            })}
           </Table>
         )}
       </Card>

@@ -154,3 +154,16 @@ describe("rbac", () => {
     expect(() => validateGrant({ role: "producer", brandId: "brd_a" })).not.toThrow();
   });
 });
+
+describe("style demand verdict", async () => {
+  const { styleVerdict } = await import("./style-demand");
+  it("waits for enough downloads and customers", () => {
+    expect(styleVerdict(50, 100, 40).kind).toBe("collecting");
+    expect(styleVerdict(100, 200, 10).kind).toBe("collecting");
+  });
+  it("recommends from the 3D share once there is enough data", () => {
+    expect(styleVerdict(60, 140, 30)).toMatchObject({ kind: "premium-3d", share: 70 });
+    expect(styleVerdict(100, 100, 30)).toMatchObject({ kind: "both", share: 50 });
+    expect(styleVerdict(150, 50, 30)).toMatchObject({ kind: "flat-first", share: 25 });
+  });
+});

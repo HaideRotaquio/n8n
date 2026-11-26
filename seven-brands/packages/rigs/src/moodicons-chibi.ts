@@ -1,5 +1,5 @@
 import type { AssetDefinition, Layer, SoundCue, Track } from "@sb/asset";
-import { contactShadow, LIGHT, SHADE, sphereGloss, sphereShade } from "./soft3d";
+import { clayGradients, contactShadow, litCopies, specular, sphereLight, type Sphere } from "./soft3d";
 import { finalize, heartPath, track } from "./util";
 
 /**
@@ -1133,23 +1133,43 @@ export const CHIBI_REACTION_TITLES = REACTION_TITLE;
 
 export type ChibiStyle = "flat" | "3d";
 
-/** Soft 3D shading: torso shade, a shadow under the head, head shade and gloss, and a shine across the hair. */
-function soft3dLayers(): { body: Layer[]; head: Layer[]; hair: Layer[] } {
+/** Clay 3D: the head and torso get their own clay light; hair, outfit and accessories share the scene light. */
+const HEAD: Sphere = { cx: 32, cy: 27, r: 17 };
+function clay3d(c: Character) {
+  const neck = contactShadow("shadow-neck", 32, 45.6, 10, 2.8);
+  const spec = specular("spec-head", HEAD);
+  const { layer: specLayer, ...specGradient } = spec;
   return {
-    body: [
-      { id: "shade-body", kind: "shape", shape: { type: "path", d: "M45 63 Q45 45 32 45 Q41.5 47.5 40.5 63 Z" }, fill: SHADE, opacity: 0.1 },
-      { id: "shade-body-edge", kind: "shape", shape: { type: "path", d: "M45 63 Q45 46 35 45.3 Q43 48 42.6 63 Z" }, fill: SHADE, opacity: 0.1 },
-      contactShadow("shadow-neck", 32, 45.8, 9.5, 2.4),
-    ],
-    head: [sphereShade("shade-head", 32, 27, 17, 1.5), sphereGloss("gloss-head", 32, 27, 17, 0.9)],
-    hair: [{ id: "gloss-hair", kind: "shape", shape: { type: "path", d: "M20.5 15.5 Q25 11.6 30.5 11" }, fill: "none", stroke: LIGHT, strokeWidth: 1.6, lineCap: "round", opacity: 0.35 }],
+    gradients: clayGradients({ head: HEAD }, [
+      neck.gradient,
+      specGradient,
+      {
+        id: "clay-torso",
+        type: "linear",
+        x1: 22,
+        y1: 46,
+        x2: 44,
+        y2: 62,
+        stops: [
+          { offset: 0, color: "#FFFFFF", opacity: 0.3 },
+          { offset: 0.4, color: "#FFFFFF", opacity: 0 },
+          { offset: 0.6, color: "#000000", opacity: 0 },
+          { offset: 1, color: "#000000", opacity: 0.32 },
+        ],
+      },
+    ]),
+    back: litCopies(c.back),
+    body: c.body.flatMap((l) => (l.id === "body" ? [l, { ...l, id: "body-lit", stroke: undefined, strokeWidth: undefined, fill: { gradient: "clay-torso" } } as Layer] : litCopies([l]))),
+    neck: neck.layer,
+    head: [sphereLight("head-lit", "head", HEAD), specLayer],
+    front: litCopies(c.front),
   };
 }
 
 export function buildChibi({ character, reaction: r, style = "flat" }: { character: ChibiCharacter; reaction: ChibiReaction; style?: ChibiStyle }): AssetDefinition {
   const c = CHARACTERS[character];
   const x = reaction(r);
-  const soft3d = soft3dLayers();
+  const clay = style === "3d" ? clay3d(c) : null;
   const head: Layer = { id: "head", kind: "shape", shape: { type: "circle", cx: 32, cy: 27, r: 17 }, fill: fill("skin"), stroke: ink, strokeWidth: 2 };
   return finalize({
     schema: "daos.asset/1",
@@ -1158,8 +1178,9 @@ export function buildChibi({ character, reaction: r, style = "flat" }: { charact
     name: `${c.name} — ${REACTION_TITLE[r]}${style === "3d" ? " (3D)" : ""}`,
     viewBox: [0, 0, 64, 64],
     tokens: { ...SHARED, ...c.tokens },
-    layers: [{ id: "char", kind: "group", origin: [32, 62], children: style === "3d"
-          ? [...(x.behind ?? []), ...c.back, ...c.body, ...soft3d.body, head, ...soft3d.head, ...c.front, ...soft3d.hair, ...x.face, ...(c.over ?? [])]
+    gradients: clay?.gradients ?? [],
+    layers: [{ id: "char", kind: "group", origin: [32, 62], children: style === "3d" && clay
+          ? [...(x.behind ?? []), ...clay.back, ...clay.body, clay.neck, head, ...clay.head, ...clay.front, ...x.face, ...(c.over ?? [])]
           : [...(x.behind ?? []), ...c.back, ...c.body, head, ...c.front, ...x.face, ...(c.over ?? [])] }],
     timeline: { duration: x.duration, loop: true, tracks: x.tracks, markers: x.markers },
     sounds: x.sounds,

@@ -1,6 +1,6 @@
 import { contrastRatio } from "@sb/core";
 import { evaluateTrack, sortedKeyframes, springAt } from "./motion";
-import { AssetDefinition, cueTime, walkLayers, type Paint } from "./schema";
+import { AssetDefinition, cueTime, walkLayers, type Paint, FillPaint } from "./schema";
 
 /**
  * Automated quality checks for an Asset Definition. Errors block publishing;
@@ -42,7 +42,21 @@ export function runQa(input: unknown): QaResult {
   let layers = 0;
   let pathChars = 0;
   const usedTokens = new Set<string>();
-  const checkPaint = (p: Paint | undefined, where: string) => {
+  const gradientIds = new Set(ad.gradients.map((g) => g.id));
+  const usedGradients = new Set<string>();
+  for (const g of ad.gradients) {
+    for (const st of g.stops) {
+      if (typeof st.color !== "object") continue;
+      usedTokens.add(st.color.token);
+      if (!(st.color.token in ad.tokens)) errors.push({ code: "unknown-token", message: `Unknown color token "${st.color.token}"`, path: `gradients.${g.id}` });
+    }
+  }
+  const checkPaint = (p: FillPaint | undefined, where: string) => {
+    if (p && typeof p === "object" && "gradient" in p) {
+      usedGradients.add(p.gradient);
+      if (!gradientIds.has(p.gradient)) errors.push({ code: "unknown-gradient", message: `Unknown gradient "${p.gradient}"`, path: where });
+      return;
+    }
     if (p && typeof p === "object") {
       usedTokens.add(p.token);
       if (!(p.token in ad.tokens)) errors.push({ code: "unknown-token", message: `Unknown color token "${p.token}"`, path: where });
@@ -65,6 +79,9 @@ export function runQa(input: unknown): QaResult {
   }
   if (layers > 200) warnings.push({ code: "complexity", message: `${layers} layers (budget 200)` });
   if (pathChars > 40_000) warnings.push({ code: "complexity", message: `${pathChars} path characters (budget 40,000)` });
+  for (const g of gradientIds) {
+    if (!usedGradients.has(g)) warnings.push({ code: "unused-gradient", message: `Gradient "${g}" is not used`, path: `gradients.${g}` });
+  }
   for (const t of Object.keys(ad.tokens)) {
     if (!usedTokens.has(t)) warnings.push({ code: "unused-token", message: `Token "${t}" is not used`, path: `tokens.${t}` });
   }
@@ -151,7 +168,7 @@ export function runQa(input: unknown): QaResult {
   // Accessibility
   if (ad.a11y.reducedMotionFrame > duration) errors.push({ code: "reduced-frame", message: "Reduced-motion frame is after the timeline end" });
   if (ad.a11y.label.trim().length < 3) warnings.push({ code: "a11y-label", message: "Accessible label is too short" });
-  const fills = [...walkLayers(ad.layers)].flatMap((l) => (l.kind === "shape" && l.fill && typeof l.fill === "object" ? [ad.tokens[l.fill.token]] : []));
+  const fills = [...walkLayers(ad.layers)].flatMap((l) => (l.kind === "shape" && l.fill && typeof l.fill === "object" && "token" in l.fill ? [ad.tokens[l.fill.token]] : []));
   if (fills.length && fills.every((c) => c && contrastRatio(c, "#FFFFFF") < 1.3) && fills.every((c) => c && contrastRatio(c, "#000000") < 1.3)) {
     warnings.push({ code: "low-visibility", message: "All fills are mid-grey; asset may be hard to see on any background" });
   }

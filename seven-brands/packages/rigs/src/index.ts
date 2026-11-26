@@ -65,7 +65,6 @@ export const RIGS: Record<string, RigInfo> = {
     variants: [...FACE_EXPRESSIONS],
     palettes: Object.keys(FACE_PALETTES),
     build: (v, p) => buildFace({ expression: v as (typeof FACE_EXPRESSIONS)[number], palette: (p ?? "classic") as FacePalette, style: "3d" }),
-    preview: true,
   },
   "moodicons-chibi-3d@1": {
     id: "moodicons-chibi-3d@1",
@@ -74,7 +73,6 @@ export const RIGS: Record<string, RigInfo> = {
     variants: [...CHIBI_VARIANTS],
     palettes: ["original"],
     build: (v) => buildChibi({ ...parseChibiVariant(v), style: "3d" }),
-    preview: true,
   },
   "sonicglyphs-line@1": {
     id: "sonicglyphs-line@1",

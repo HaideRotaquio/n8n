@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { renderFrameSvg, type AssetDefinition } from "@sb/asset";
+import { parseAssetDefinition, renderFrameSvg, type AssetDefinition } from "@sb/asset";
 import { RIGS } from "@sb/rigs";
 import { chromium, type Browser, type Page } from "playwright";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -85,6 +85,43 @@ describe("Lottie export", () => {
     expect((await diff(ad, 0, wrong)).mean).toBeGreaterThan(10);
     const shifted = exportLottie({ ...ad, viewBox: [6, 0, 64, 64] });
     expect((await diff(ad, 0, shifted)).mean).toBeGreaterThan(5);
+  });
+
+  it("gradient fills (linear and radial, with transparent stops) match on a moving layer", async () => {
+    const ad = parseAssetDefinition({
+      schema: "daos.asset/1",
+      brand: "moodicons",
+      slug: "gradient-check",
+      name: "Gradient check",
+      viewBox: [0, 0, 64, 64],
+      tokens: { base: "#3A6FD8" },
+      gradients: [
+        { id: "sky", type: "linear", x1: 8, y1: 8, x2: 56, y2: 56, stops: [{ offset: 0, color: "#FFD54A" }, { offset: 1, color: { token: "base" } }] },
+        { id: "clay", type: "radial", cx: 24, cy: 22, r: 30, stops: [{ offset: 0, color: "#FFFFFF", opacity: 0.7 }, { offset: 0.45, color: "#FFFFFF", opacity: 0 }, { offset: 0.75, color: "#000000", opacity: 0 }, { offset: 1, color: "#000000", opacity: 0.35 }] },
+      ],
+      layers: [
+        { id: "card", kind: "shape", shape: { type: "rect", x: 6, y: 6, width: 52, height: 52, rx: 10 }, fill: { gradient: "sky" } },
+        {
+          id: "ball",
+          kind: "group",
+          origin: [32, 32],
+          children: [
+            { id: "ball-base", kind: "shape", shape: { type: "circle", cx: 32, cy: 32, r: 18 }, fill: "#E8336D", stroke: "#2B1B12", strokeWidth: 2 },
+            { id: "ball-light", kind: "shape", shape: { type: "circle", cx: 32, cy: 32, r: 17 }, fill: { gradient: "clay" } },
+          ],
+        },
+      ],
+      timeline: { duration: 1000, loop: true, tracks: [{ target: "ball", property: "translateY", keyframes: [{ at: 0, value: 0 }, { at: 500, value: -6 }, { at: 1000, value: 0 }] }, { target: "ball", property: "rotate", keyframes: [{ at: 0, value: 0 }, { at: 1000, value: 40 }] }] },
+      a11y: { label: "Gradient check", reducedMotionFrame: 0 },
+      provenance: { method: "manual" },
+    });
+    const l = exportLottie(ad) as any;
+    expect(JSON.stringify(l)).toContain('"ty":"gf"');
+    for (const f of [0, 20, 45]) {
+      const d = await diff(ad, f);
+      expect(d.inked).toBeGreaterThan(500);
+      expect(d.mean, `frame ${f}`).toBeLessThan(2.5);
+    }
   });
 
   it.each(assets.map((a) => [`${a.brand}/${a.slug}`, a] as const))("%s renders in lottie-web like our player", async (_, ad) => {

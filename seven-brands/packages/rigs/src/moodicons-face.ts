@@ -1,4 +1,6 @@
-import { sphereGloss, sphereShade } from "./soft3d";
+import { clayGradients, specular, sphereLight, type Sphere } from "./soft3d";
+
+const FACE: Sphere = { cx: 32, cy: 32, r: 27 };
 import type { AssetDefinition, Layer, SoundCue, Track } from "@sb/asset";
 import { finalize, heartPath, SPRING_SNAPPY, SPRING_SOFT, track } from "./util";
 
@@ -367,7 +369,7 @@ export function buildFace({ expression, palette = "classic", style = "flat" }: F
     origin: [32, 58],
     children: [
       { id: "head", kind: "shape", shape: { type: "circle", cx: 32, cy: 32, r: 27 }, fill: { token: "face" }, stroke: ink, strokeWidth: 2.5 },
-      ...(style === "3d" ? [sphereShade("shade-head", 32, 32, 27), sphereGloss("gloss-head", 32, 32, 27)] : []),
+      ...(style === "3d" ? [sphereLight("head-lit", "head", FACE), specular("spec-head", FACE).layer] : []),
       ...extras(expression).filter((l) => l.id.startsWith("blush") || l.id === "hat"),
       ...eyes(expression),
       ...mouth(expression),
@@ -384,6 +386,7 @@ export function buildFace({ expression, palette = "classic", style = "flat" }: F
     name: `${meta.name}${palette === "classic" ? "" : ` (${palette})`}${style === "3d" ? " (3D)" : ""}`,
     viewBox: [0, 0, 64, 64],
     tokens: { ...FACE_PALETTES[palette] },
+    gradients: style === "3d" ? (() => { const { layer: _l, ...spec } = specular("spec-head", FACE); return clayGradients({ head: FACE }, [spec]); })() : [],
     layers: [faceGroup, ...floating],
     timeline: { duration: m.duration, loop: true, tracks: m.tracks, markers: m.markers },
     sounds: m.sounds,

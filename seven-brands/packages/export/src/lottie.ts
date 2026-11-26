@@ -1,4 +1,4 @@
-import { indexTracks, layerOrigin, layerState, resolvePaint, type AssetDefinition, type Layer, type ShapeLayer } from "@sb/asset";
+import { indexTracks, layerOrigin, layerState, resolvePaint, type AssetDefinition, type Layer, type ShapeLayer, resolveStopColor, type Gradient } from "@sb/asset";
 
 /**
  * Asset Definition → Lottie (Bodymovin JSON, v5).
@@ -272,11 +272,34 @@ function geometry(layer: ShapeLayer, map: (p: Vec) => Vec): unknown[] {
   }
 }
 
-function paintItems(layer: ShapeLayer, tokens: Record<string, string>): unknown[] {
+/**
+ * Lottie gradient fill ("gf"). Colour stops come first as [offset, r, g, b]…, then opacity stops as [offset, alpha]…,
+ * which lottie-web and the native Lottie players read as an opacity ramp. Points use the shape's own coordinates,
+ * like SVG's userSpaceOnUse; a radial gradient's end point sits one radius to the right of its centre.
+ */
+function gradientFill(g: Gradient, tokens: Record<string, string>, map: (p: Vec) => Vec, evenodd: boolean): unknown {
+  const colors = g.stops.flatMap((st) => [st.offset, ...hexToRgb(resolveStopColor(st.color, tokens)).slice(0, 3)]);
+  const alphas = g.stops.flatMap((st) => [st.offset, st.opacity ?? 1]);
+  const [s, e]: [Vec, Vec] = g.type === "linear" ? [[g.x1, g.y1], [g.x2, g.y2]] : [[g.cx, g.cy], [g.cx + g.r, g.cy]];
+  return {
+    ty: "gf",
+    nm: "fill",
+    o: stat(100),
+    r: evenodd ? 2 : 1,
+    t: g.type === "linear" ? 1 : 2,
+    s: stat(map(s)),
+    e: stat(map(e)),
+    g: { p: g.stops.length, k: stat([...colors, ...alphas]) },
+    ...(g.type === "radial" ? { h: stat(0), a: stat(0) } : {}),
+  };
+}
+
+function paintItems(layer: ShapeLayer, tokens: Record<string, string>, gradients: Map<string, Gradient>, map: (p: Vec) => Vec): unknown[] {
   const out: unknown[] = [];
   const stroke = resolvePaint(layer.stroke, tokens);
+  const gradient = layer.fill && typeof layer.fill === "object" && "gradient" in layer.fill ? gradients.get(layer.fill.gradient) : undefined;
   // SVG default fill is black when unspecified (except lines/polylines, which our renderer leaves unfilled).
-  const fill = resolvePaint(layer.fill, tokens) ?? (layer.shape.type === "line" || layer.shape.type === "polyline" ? undefined : "#000000");
+  const fill = gradient ? undefined : (resolvePaint(layer.fill, tokens) ?? (layer.shape.type === "line" || layer.shape.type === "polyline" ? undefined : "#000000"));
   if (stroke && stroke !== "none") {
     out.push({
       ty: "st",
@@ -289,6 +312,7 @@ function paintItems(layer: ShapeLayer, tokens: Record<string, string>): unknown[
       ml: 4,
     });
   }
+  if (gradient) out.push(gradientFill(gradient, tokens, map, layer.fillRule === "evenodd"));
   if (fill && fill !== "none") out.push({ ty: "fl", nm: "fill", c: stat(hexToRgb(fill)), o: stat(100), r: layer.fillRule === "evenodd" ? 2 : 1 });
   return out;
 }
@@ -327,11 +351,11 @@ function bake(ad: AssetDefinition, layer: Layer, frames: number, map: (p: Vec) =
   return { a: stat(anchor), p: prop("p"), s: prop("s"), r: prop("r"), o: prop("o") };
 }
 
-function groupItem(ad: AssetDefinition, layer: Layer, frames: number, tokens: Record<string, string>, map: (p: Vec) => Vec): unknown {
+function groupItem(ad: AssetDefinition, layer: Layer, frames: number, tokens: Record<string, string>, map: (p: Vec) => Vec, gradients = new Map((ad.gradients ?? []).map((g) => [g.id, g]))): unknown {
   const items =
     layer.kind === "group"
-      ? [...layer.children].reverse().map((c) => groupItem(ad, c, frames, tokens, map))
-      : [...geometry(layer, map), ...paintItems(layer, tokens)];
+      ? [...layer.children].reverse().map((c) => groupItem(ad, c, frames, tokens, map, gradients))
+      : [...geometry(layer, map), ...paintItems(layer, tokens, gradients, map)];
   const tr = bake(ad, layer, frames, map);
   return { ty: "gr", nm: layer.id, it: [...items, { ty: "tr", ...tr, sk: stat(0), sa: stat(0) }] };
 }

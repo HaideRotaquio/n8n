@@ -39,6 +39,36 @@ export const Paint = z.union([
 ]);
 export type Paint = z.infer<typeof Paint>;
 
+/**
+ * Gradients are defined once per asset (`gradients`) and used as a fill with `{ gradient: "id" }`.
+ * Coordinates are in the same space as the shape that uses them (they move with its layer). Stop colours can be
+ * tokens, so customers' colour changes flow into gradients; per-stop opacity allows soft light and shade overlays.
+ */
+export const GradientStop = z
+  .object({
+    offset: num.min(0).max(1),
+    color: z.union([HexColor, z.object({ token: tokenName }).strict()]),
+    opacity: num.min(0).max(1).optional(),
+  })
+  .strict();
+export type GradientStop = z.infer<typeof GradientStop>;
+
+const stops = z
+  .array(GradientStop)
+  .min(2)
+  .max(8)
+  .refine((ss) => ss.every((x, i) => i === 0 || x.offset >= ss[i - 1]!.offset), "Gradient stop offsets must not decrease");
+
+export const Gradient = z.discriminatedUnion("type", [
+  z.object({ id, type: z.literal("linear"), x1: coord, y1: coord, x2: coord, y2: coord, stops }).strict(),
+  z.object({ id, type: z.literal("radial"), cx: coord, cy: coord, r: positive, stops }).strict(),
+]);
+export type Gradient = z.infer<typeof Gradient>;
+
+/** Fills may also use a gradient; strokes stay solid (every export target supports that combination). */
+export const FillPaint = z.union([Paint, z.object({ gradient: id }).strict()]);
+export type FillPaint = z.infer<typeof FillPaint>;
+
 export const Shape = z.discriminatedUnion("type", [
   z.object({ type: z.literal("path"), d: PathData }).strict(),
   z.object({ type: z.literal("circle"), cx: coord, cy: coord, r: positive }).strict(),
@@ -82,7 +112,7 @@ export const ShapeLayer = z
     ...layerBase,
     kind: z.literal("shape"),
     shape: Shape,
-    fill: Paint.optional(),
+    fill: FillPaint.optional(),
     stroke: Paint.optional(),
     strokeWidth: num.min(0).max(1000).optional(),
     lineCap: z.enum(["butt", "round", "square"]).optional(),
@@ -213,6 +243,11 @@ export const AssetDefinition = z
     /** Customizable colors. Layers reference them as `{ token: "primary" }`. */
     tokens: z.record(tokenName, HexColor).refine((t) => Object.keys(t).length <= 24, "At most 24 tokens"),
     layers: z.array(Layer).min(1).max(500),
+    gradients: z
+      .array(Gradient)
+      .max(32)
+      .default([])
+      .refine((gs) => new Set(gs.map((g) => g.id)).size === gs.length, "Gradient ids must be unique"),
     timeline: Timeline,
     sounds: z.array(SoundCue).max(50).default([]),
     interactions: z.array(Interaction).max(20).default([]),
@@ -237,7 +272,7 @@ export const AssetDefinition = z
 export type AssetDefinition = z.infer<typeof AssetDefinition>;
 export type AssetDefinitionInput = z.input<typeof AssetDefinition>;
 
-export { walkLayers, resolvePaint, cueTime } from "./helpers";
+export { walkLayers, resolvePaint, resolveStopColor, cueTime } from "./helpers";
 
 export function parseAssetDefinition(input: unknown): AssetDefinition {
   return AssetDefinition.parse(input);

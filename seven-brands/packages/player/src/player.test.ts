@@ -209,3 +209,27 @@ describe("scroll-driven playback", () => {
   });
 });
 
+
+describe("validate-lite gradients", async () => {
+  const { isAssetDefinition } = await import("./validate-lite");
+  const base = () => {
+    const ad = structuredClone(BEATING_HEART) as any;
+    ad.gradients = [{ id: "glow", type: "linear", x1: 0, y1: 0, x2: 64, y2: 64, stops: [{ offset: 0, color: "#FFFFFF", opacity: 0.5 }, { offset: 1, color: "#000000" }] }];
+    ad.layers = [...ad.layers, { id: "light", kind: "shape", shape: { type: "rect", x: 0, y: 0, width: 64, height: 64 }, fill: { gradient: "glow" } }];
+    return ad;
+  };
+  it("accepts gradient fills that reference a defined gradient", () => {
+    expect(isAssetDefinition(base())).toBe(true);
+  });
+  it("rejects unknown gradients, bad stop colours and gradient strokes", () => {
+    const unknown = base();
+    unknown.layers.at(-1).fill = { gradient: "missing" };
+    expect(isAssetDefinition(unknown)).toBe(false);
+    const badStop = base();
+    badStop.gradients[0].stops[0].color = "red";
+    expect(isAssetDefinition(badStop)).toBe(false);
+    const stroke = base();
+    stroke.layers.at(-1).stroke = { gradient: "glow" };
+    expect(isAssetDefinition(stroke)).toBe(false);
+  });
+});
