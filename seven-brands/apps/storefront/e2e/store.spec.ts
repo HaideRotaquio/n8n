@@ -129,6 +129,12 @@ test("developer API: public search, then license-checked icon files for the CLI 
   expect(wc.body.files[0].path).toBe("beating-heart.json");
   expect(wc.body.usage).toContain('<daos-asset src="icons/beating-heart.json"');
 
+  const flutter = await call(licenseCode, "flutter");
+  expect(flutter.body.files.map((f: { path: string }) => f.path)).toEqual(["beating-heart.lottie.json", "beating-heart.wav", "beating_heart_icon.dart"]);
+  expect(atob(flutter.body.files[1].content).slice(0, 4)).toBe("RIFF");
+  const rn = await call(licenseCode, "react-native");
+  expect(rn.body.files[2].content).toContain('from "daos-icons-react-native"');
+
   // A Moodicons code means nothing on another brand's store.
   await page.goto(`${OTHER_STORE_URL}/developers`);
   const other = await call(licenseCode, "react");

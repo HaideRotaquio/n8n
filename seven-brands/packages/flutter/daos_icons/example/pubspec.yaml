@@ -1,0 +1,16 @@
+name: daos_icons_example
+description: Example app using an icon added by the Moodicons CLI.
+publish_to: none
+environment:
+  sdk: ^3.10.0
+dependencies:
+  flutter:
+    sdk: flutter
+  daos_icons:
+    path: ../
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  assets:
+    - lib/icons/

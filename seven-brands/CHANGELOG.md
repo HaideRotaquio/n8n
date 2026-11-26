@@ -2,6 +2,18 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.5.1] — 2026-11-26 — React Native and Flutter
+
+### Added
+- **React Native / Expo player** `daos-icons-react-native` (`packages/react-native`): `DaosIcon` plays the icon's Lottie motion with its pre-mixed sound loop (stereo kept) in sync. Sound modes `press` (default: tap replays with sound), `always` (every loop) and `off`; respects Reduce Motion (still frame, nothing plays until the setting is known) and the phone's silent switch. Typechecked against React Native 0.88, lottie-react-native 7 and expo-audio; 9 tests.
+- **Flutter player** `daos_icons` (`packages/flutter/daos_icons`): the same rules with `lottie` and `audioplayers`, `MediaQuery.disableAnimations` support, screen-reader semantics and a swappable sound engine. 9 Flutter tests, including a render of a real exported icon through Flutter's Lottie, plus an example app that compiles and runs the exact widget the CLI generates.
+- New source formats `react-native` and `flutter` in the developer API and CLI: Lottie JSON, a WAV of one sound loop (recorded library sounds mixed in) and a typed wrapper component/widget per icon.
+- CLI detects React Native/Expo (`src/components/icons`) and Flutter (`lib/icons`) projects, writes audio as binary, fills Flutter asset paths and adds the icons folder to `pubspec.yaml` assets (only when the layout is the usual one; otherwise it says what to add).
+- Developers page and `/llms.txt` explain mobile setup.
+
+### Owner to-do before publishing the players
+- Check the names `daos-icons-react-native` (npm) and `daos_icons` (pub.dev) are free, then `npm publish` from `packages/react-native` and `flutter pub publish` from `packages/flutter/daos_icons`. iOS and Android builds haven't been run here (no simulators); try one icon in a real app first.
+
 ## [0.5.0] — 2026-11-26 — AI agent install
 
 ### Added

@@ -14,7 +14,8 @@ export function devGuide(brand: Brand, origin: string) {
       { cmd: `npx ${cli} search "happy cat"`, what: "Find icons by name, mood or tag." },
       { cmd: `npx ${cli} login YOUR-LICENSE-CODE`, what: "Save your license code on this computer (from your account page or purchase email)." },
       { cmd: `npx ${cli} add chibi-kai-cool`, what: "Add an icon to your project. React projects get a component; others get the Web Component." },
-      { cmd: `npx ${cli} add face-happy --format svg-animated`, what: "Pick a format: react, web-component, svg-animated, svg, lottie, json." },
+      { cmd: `npx ${cli} add face-happy --format svg-animated`, what: "Pick a format: react, web-component, react-native, flutter, svg-animated, svg, lottie, json." },
+      { cmd: `npx ${cli} add chibi-kai-cool   # in a React Native, Expo or Flutter project`, what: "Mobile apps get a native component with the same motion and synced sound (needs the daos-icons-react-native or daos_icons player)." },
     ],
     claudeCode: `claude mcp add ${cli} --env ${cli.toUpperCase()}_LICENSE=YOUR-LICENSE-CODE -- npx -y ${cli} mcp`,
     mcpJson,
@@ -49,7 +50,9 @@ ${g.mcpJson}
 
 - React: \`import { ChibiKaiCool } from "./icons/ChibiKaiCool";\` then \`<ChibiKaiCool />\`. Props: autoplay, speed, tokens (color overrides), label, scroll ("scrub" | "in-view"), scrollLoops. Needs icons/daos-player.js next to it (the CLI adds it).
 - Web Component: \`<script src="icons/daos-player.js" defer></script>\` then \`<daos-asset src="icons/<slug>.json" autoplay></daos-asset>\`. Call element.unmute() from a click handler to enable sound.
-- Animated SVG works in <img> but has no sound. Lottie has no sound.
+- React Native / Expo: \`npm install daos-icons-react-native lottie-react-native expo-audio\`, then \`<ChibiKaiCool size={64} />\` (tap replays with sound; soundMode="always" plays it every loop).
+- Flutter: \`flutter pub add daos_icons lottie audioplayers\`, then \`ChibiKaiCoolIcon(size: 64)\`; the CLI adds the icons folder to pubspec.yaml assets.
+- Animated SVG works in <img> but has no sound. Plain Lottie has no sound (the native players add it).
 
 ## HTTP API
 

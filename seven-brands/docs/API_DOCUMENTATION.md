@@ -107,7 +107,7 @@ free packs first). Only deliverable (reviewer-approved, exported) versions of pu
 The still (reduced-motion) frame as SVG, served with a restrictive CSP.
 
 ### `POST /api/v1/icons/:slug/files` (license code)
-Body `{"format":"react"}` — one of `react`, `web-component`, `svg-animated`, `svg`, `lottie`, `json`. Response:
+Body `{"format":"react"}` — one of `react`, `web-component`, `react-native`, `flutter`, `svg-animated`, `svg`, `lottie`, `json`. Native formats include a WAV sound loop as a file with `"encoding":"base64"`; Flutter files may contain `{{ICONS_DIR}}`, which the CLI replaces with the icons folder's project path. Response:
 `{ icon, format, files: [{path, content}], needsPlayer, usage, license: { code, licenseType, productSlug, productTitle, notice, termsUrl } }`.
 The license must belong to this brand, be active (not revoked or refunded) and cover a product containing the icon.
 Each call counts against the same per-customer download limits as the website (30/hour, 150/day) and is logged.
