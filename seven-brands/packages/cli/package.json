@@ -1,0 +1,25 @@
+{
+  "name": "@sb/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Brand CLIs (npx moodicons …) and MCP servers for AI coding agents. Built into one publishable package per brand.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "build": "tsx scripts/build.ts",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@sb/core": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@sb/export": "workspace:*",
+    "esbuild": "^0.28.2"
+  }
+}

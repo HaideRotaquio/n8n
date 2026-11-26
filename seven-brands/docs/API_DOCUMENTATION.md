@@ -89,6 +89,40 @@ Preview audio (WAV) for a library sound that is shared or belongs to this brand;
 ### `GET /api/storage/download` (*storefront*)
 Same signed-URL route as the admin's, for the `fs` driver.
 
+## Developer API (*storefront*) — CLI, MCP server and AI coding agents
+
+Same host-based brand resolution as the store. Search and previews are public; source files need a license code that
+covers the icon, sent as `Authorization: Bearer <code>`. A summary for AI tools is served at `/llms.txt`, and setup
+instructions for people at `/developers`.
+
+### `GET /api/v1/icons?q=happy+cat&limit=20` (public)
+Published icons whose slug, name, tags, category or description match every word. Each result has `slug`, `name`,
+`description`, `tags`, `category`, `hasSound`, `durationMs`, `previewUrl` and `products` (`slug`, `title`, `free`, `url`;
+free packs first). Only deliverable (reviewer-approved, exported) versions of published products are visible.
+
+### `GET /api/v1/icons/:slug` (public)
+`{ icon, formats, colors }` — `formats` is what `/files` accepts; `colors` are the overridable tokens.
+
+### `GET /api/v1/icons/:slug/preview.svg` (public)
+The still (reduced-motion) frame as SVG, served with a restrictive CSP.
+
+### `POST /api/v1/icons/:slug/files` (license code)
+Body `{"format":"react"}` — one of `react`, `web-component`, `svg-animated`, `svg`, `lottie`, `json`. Response:
+`{ icon, format, files: [{path, content}], needsPlayer, usage, license: { code, licenseType, productSlug, productTitle, notice, termsUrl } }`.
+The license must belong to this brand, be active (not revoked or refunded) and cover a product containing the icon.
+Each call counts against the same per-customer download limits as the website (30/hour, 150/day) and is logged.
+
+| Status | `error` | Meaning |
+|---|---|---|
+| 400 | `bad_format` | Unknown format |
+| 401 | `license_required` / `invalid_license` | No code, or not a code of this store |
+| 403 | `license_revoked` | Revoked, e.g. after a refund |
+| 403 | `not_in_license` | The code's product doesn't include the icon; `products` lists where it is sold |
+| 404 | `not_found` | No published icon with that slug |
+| 429 | `rate_limited` | Download limits reached |
+
+The player runtime (`daos-player.js`) is not served here: the CLI ships it (see `packages/cli`).
+
 ## Versioning
 
 Breaking changes go to `/api/v2`. The public developer API (AliveUI, Phase 7) will use API keys, not cookies.

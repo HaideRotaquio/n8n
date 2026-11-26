@@ -3,7 +3,7 @@
  * exported by the real export job (needs ffmpeg) and priced for two licenses.
  */
 import { BEATING_HEART } from "@sb/asset";
-import { createProduct, getBrandBySlug, enqueueJob, publishProduct, reviewAsset, saveAssetDefinition, seed, upsertPrice, claimNextJob, completeJob } from "@sb/db";
+import { schema, createProduct, getBrandBySlug, enqueueJob, publishProduct, reviewAsset, saveAssetDefinition, seed, upsertPrice, claimNextJob, completeJob } from "@sb/db";
 import { createTestDb } from "@sb/db/testing";
 import { createStorageFromEnv } from "@sb/storage";
 import { runJob } from "../../../services/worker/src/jobs";
@@ -14,6 +14,8 @@ const ctx = { actorUserId: null, userAgent: "e2e-setup" };
 try {
   await seed(h.db);
   const mood = (await getBrandBySlug(h.db, "moodicons"))!;
+  // Node can't resolve *.localhost, so the CLI end-to-end test reaches the Moodicons store as plain "localhost".
+  await h.db.insert(schema.brandDomain).values({ hostname: "localhost", brandId: mood.id }).onConflictDoNothing();
   const saved = await saveAssetDefinition(h.db, ctx, structuredClone(BEATING_HEART));
   await reviewAsset(h.db, ctx, { assetId: saved.asset.id, decision: "approved" });
   await enqueueJob(h.db, ctx, { brandId: mood.id, kind: "export", brief: { assetId: saved.asset.id, formats: ["svg", "png", "json"] } });

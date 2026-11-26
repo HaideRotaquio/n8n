@@ -34,6 +34,7 @@ packages/export/   SVG/PNG/GIF/MP4/WebM/WAV/Lottie/React/Web Component/ZIP expor
 packages/rigs/     Parametric generators (Moodicons faces + stickers, SonicGlyphs glyphs) and the launch catalog plan
 packages/agents/   AI providers (Anthropic, fixtures) and the production pipeline
 packages/commerce/ Payment providers (Lemon Squeezy, Paddle, test), webhooks, license certificates
+packages/cli/      Brand CLIs (`npx moodicons add …`) with a built-in MCP server for AI coding agents
 infrastructure/    docker-compose for local Postgres + MinIO; production Dockerfile, staging compose + Caddy
 docs/              Architecture, schema, security, costs, payments setup, roadmap… (15 documents)
 ```

@@ -2,6 +2,19 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.5.0] — 2026-11-26 — AI agent install
+
+### Added
+- **Developer API** on every storefront: public icon search, details and still previews; `POST /api/v1/icons/:slug/files` returns an icon's source (React, Web Component, animated SVG, SVG, Lottie, JSON) for a license code that covers it, with the website's download limits and logging. Codes from another brand, revoked codes and icons outside the purchased product are refused, with buy links.
+- **CLI per brand** (`packages/cli`, built to `dist/<brand>/` as the npm packages `moodicons` and `sonicglyphs`): `search`, `add` (detects React/Next vs plain HTML, writes into `src/components/icons` or `icons/`, adds `daos-player.js` once and an `ICON-LICENSES.md` record), `login`/`licenses`/`logout` (codes stored per store, readable only by the user, or `<BRAND>_LICENSE`). Multiple licenses are tried in turn.
+- **MCP server** (`npx moodicons mcp`) with `search_icons`, `get_icon`, `add_icon` and `project_info`; writes only inside the project and returns buy links instead of failing silently when a license doesn't cover an icon.
+- `/llms.txt` and a **Developers & AI agents** page with Claude Code and generic MCP setup; footer links in both designs.
+- `@sb/export/source`: the text-only exporters, importable by web servers without esbuild or native renderers.
+- Tests: developer API repository (4), source exporter (2), CLI + MCP with a mock store (8), and storefront E2E for the API and for the built CLI and MCP server against the real store.
+
+### Owner to-do before publishing the CLI
+- Check that the npm names `moodicons` and `sonicglyphs` are free (otherwise use a scope such as `@moodicons/cli`), then build with `STORE_URL_MOODICONS=https://… STORE_URL_SONICGLYPHS=https://… pnpm --filter @sb/cli build` and `npm publish` each `dist/<brand>` folder.
+
 ## [0.4.8] — 2026-11-25 — Kasanagi crew
 
 ### Added

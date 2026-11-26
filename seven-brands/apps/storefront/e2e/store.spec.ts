@@ -1,7 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import { strFromU8, unzipSync } from "fflate";
 import { readFile } from "node:fs/promises";
-import { OTHER_STORE_URL, UNKNOWN_HOST_URL } from "../playwright.config";
+import { execFileSync, spawn } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { OTHER_STORE_URL, STORE_URL, UNKNOWN_HOST_URL } from "../playwright.config";
 
 test.describe.configure({ mode: "serial" });
 
@@ -129,6 +133,63 @@ test("developer API: public search, then license-checked icon files for the CLI 
   await page.goto(`${OTHER_STORE_URL}/developers`);
   const other = await call(licenseCode, "react");
   expect(other).toMatchObject({ status: 401, body: { error: "invalid_license" } });
+});
+
+test("the built CLI and its MCP server install a purchased icon into a project", async () => {
+  const cliDir = path.resolve(process.cwd(), "../../packages/cli");
+  const cli = path.join(cliDir, "dist/moodicons/cli.js");
+  if (!existsSync(cli)) execFileSync("npx", ["tsx", "scripts/build.ts"], { cwd: cliDir, stdio: "ignore" });
+  const projectDir = mkdtempSync(path.join(os.tmpdir(), "sb-e2e-project-"));
+  writeFileSync(path.join(projectDir, "package.json"), JSON.stringify({ dependencies: { react: "19" } }));
+  mkdirSync(path.join(projectDir, "src"));
+  const store = `http://localhost:${new URL(STORE_URL).port}`;
+  const env = { ...process.env, MOODICONS_STORE_URL: store, SEVENBRANDS_CONFIG_DIR: mkdtempSync(path.join(os.tmpdir(), "sb-e2e-cfg-")) };
+  const run = (args: string[], extra: Record<string, string> = {}) => execFileSync("node", [cli, ...args], { cwd: projectDir, env: { ...env, ...extra }, encoding: "utf8" });
+
+  expect(run(["search", "heart"])).toContain("beating-heart");
+  expect(() => run(["add", "beating-heart"])).toThrow(); // no license yet
+  expect(run(["login", licenseCode])).toContain("Saved");
+  expect(run(["add", "beating-heart"])).toContain("BeatingHeart");
+  const icons = path.join(projectDir, "src/components/icons");
+  expect(readFileSync(path.join(icons, "BeatingHeart.tsx"), "utf8")).toContain("export function BeatingHeart");
+  expect(readFileSync(path.join(icons, "daos-player.js"), "utf8")).toContain("DAOS player");
+  expect(readFileSync(path.join(icons, "ICON-LICENSES.md"), "utf8")).toContain(licenseCode);
+
+  // The MCP server over stdio, as an AI coding agent would use it.
+  const child = spawn("node", [cli, "mcp"], { cwd: projectDir, env: { ...env, MOODICONS_LICENSE: licenseCode } });
+  const replies = new Map<number, any>();
+  let buf = "";
+  child.stdout.on("data", (d: Buffer) => {
+    buf += d.toString();
+    let i: number;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, i);
+      buf = buf.slice(i + 1);
+      if (line.trim()) {
+        const msg = JSON.parse(line);
+        if (msg.id !== undefined) replies.set(msg.id, msg);
+      }
+    }
+  });
+  const send = (msg: object) => child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", ...msg })}\n`);
+  const reply = async (id: number) => {
+    await expect.poll(() => replies.has(id), { timeout: 15_000 }).toBe(true);
+    return replies.get(id);
+  };
+  try {
+    send({ id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "e2e-agent", version: "1" } } });
+    expect((await reply(1)).result.serverInfo.name).toBe("moodicons");
+    send({ method: "notifications/initialized" });
+    send({ id: 2, method: "tools/call", params: { name: "search_icons", arguments: { query: "heart" } } });
+    expect(JSON.stringify((await reply(2)).result.content)).toContain("beating-heart");
+    send({ id: 3, method: "tools/call", params: { name: "add_icon", arguments: { slug: "beating-heart", format: "web-component", directory: "public/icons" } } });
+    const added = (await reply(3)).result;
+    expect(added.isError).toBeFalsy();
+    expect(JSON.stringify(added.content)).toContain("daos-asset");
+    expect(existsSync(path.join(projectDir, "public/icons/beating-heart.json"))).toBe(true);
+  } finally {
+    child.kill();
+  }
 });
 
 test("another customer can't use someone else's entitlement, and sessions don't cross brands", async ({ page }) => {
