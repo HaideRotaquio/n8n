@@ -2,6 +2,12 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.5.2] — 2026-11-26 — More chibi emotions
+
+### Added
+- Eight new emotions for every chibi character: **Giggle** (three rising "hehe" plucks), **Jiggle** (jelly squash-and-stretch with a boing), **Wink** (sparkle with a panned chime), **Excited** (star eyes, double bounce), **Shy** (deepening blush and sway), **Sleepy** (drifting Zs, slow breathing), **Confused** (head tilt and a question mark with a rising "huh?") and **Scared** (shiver and sweat drop). Each character now has 16 emotions: 34 × 16 = 544 chibi icons, all QA 100.
+- Packs may hold up to 200 icons (was 100), so the Kasanagi crew bundle (12 characters × 16 emotions) still fits.
+
 ## [0.5.1] — 2026-11-26 — React Native and Flutter
 
 ### Added

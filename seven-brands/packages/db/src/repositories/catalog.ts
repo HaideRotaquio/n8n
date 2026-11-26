@@ -37,7 +37,8 @@ export const deliverableVersion = (assetId: unknown) => sql<number | null>`(
   where v.asset_id = ${assetId}
     and exists (select 1 from quality_review q where q.asset_version_id = v.id and q.kind = 'human' and q.decision = 'approved')
     and exists (select 1 from export_artifact e where e.asset_version_id = v.id and e.format = 'zip'))`;
-const MAX_PACK_ASSETS = 100;
+/** Bundles download icon by icon, so size only limits how much one product page lists. */
+const MAX_PACK_ASSETS = 200;
 
 export interface ProductInput {
   brandId: string;

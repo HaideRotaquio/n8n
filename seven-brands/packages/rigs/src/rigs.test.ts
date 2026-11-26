@@ -22,7 +22,7 @@ describe("rigs", () => {
   });
   it("starter set covers every rig variant once, each with sound", () => {
     const set = starterSet();
-    expect(set.filter((a) => a.brand === "moodicons")).toHaveLength(301); // 15 faces + 8 stickers + 6 Bawal signs + 272 chibi (34 characters × 8 reactions)
+    expect(set.filter((a) => a.brand === "moodicons")).toHaveLength(573); // 15 faces + 8 stickers + 6 Bawal signs + 544 chibi (34 characters × 16 reactions)
     expect(set.filter((a) => a.brand === "sonicglyphs")).toHaveLength(14);
     expect(set.every((a) => a.sounds.length > 0 && a.provenance.method === "rig")).toBe(true);
   });
@@ -37,7 +37,7 @@ describe("launch catalog", async () => {
     for (const p of plan) {
       expect(p.assetSlugs.every((s) => slugs.has(s))).toBe(true);
       expect(p.assetSlugs.length).toBeGreaterThanOrEqual(p.kind === "pack" ? 2 : 1);
-      expect(p.assetSlugs.length).toBeLessThanOrEqual(100);
+      expect(p.assetSlugs.length).toBeLessThanOrEqual(200);
     }
     expect(plan.filter((p) => Object.values(p.prices).every((c) => c === 0))).toHaveLength(1);
     // Every rig asset is for sale somewhere.

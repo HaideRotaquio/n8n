@@ -1,6 +1,6 @@
 import { buildFace, FACE_EXPRESSIONS, FACE_PALETTES, type FacePalette } from "./moodicons-face";
 import { BAWAL_SIGNS, buildBawal } from "./moodicons-bawal";
-import { buildChibi, CHIBI_CHARACTERS, CHIBI_CREW_TITLES, CHIBI_CREWS, CHIBI_NAMES, CHIBI_REACTIONS, chibiCrewMembers } from "./moodicons-chibi";
+import { buildChibi, CHIBI_CHARACTERS, CHIBI_CREW_TITLES, CHIBI_REACTION_TITLES, CHIBI_CREWS, CHIBI_NAMES, CHIBI_REACTIONS, chibiCrewMembers } from "./moodicons-chibi";
 import { buildSymbol, SYMBOL_PALETTES, SYMBOLS, type SymbolPalette } from "./moodicons-symbols";
 import { buildGlyph, GLYPH_PALETTES, GLYPHS, type GlyphPalette } from "./sonicglyphs";
 
@@ -62,7 +62,7 @@ function moodicons(): ProductPlan[] {
     return {
       slug: `chibi-${c}-pack`,
       title: `Chibi ${name} — Reactions Pack`,
-      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (cool shades drop, power-up aura, happy, laughing, in love, sad, angry, surprised), each with its own sound. An original Moodicons character from the ${CHIBI_CREW_TITLES[CHIBI_NAMES[c].crew]}.`,
+      description: `${name}, ${role}: ${CHIBI_REACTIONS.length} animated reactions (${CHIBI_REACTIONS.map((r) => CHIBI_REACTION_TITLES[r].toLowerCase()).join(", ")}), each with its own sound. An original Moodicons character from the ${CHIBI_CREW_TITLES[CHIBI_NAMES[c].crew]}.`,
       kind: "pack",
       assetSlugs: chibiSlugs(c),
       prices: { personal: 900, commercial: 2900, team: 5900, agency: 11900 },

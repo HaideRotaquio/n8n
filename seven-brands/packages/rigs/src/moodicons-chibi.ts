@@ -17,11 +17,11 @@ export type ChibiCrew = (typeof CHIBI_CREWS)[number];
 export const CHIBI_CREW_TITLES: Record<ChibiCrew, string> = { street: "Street Crew", "sky-pirates": "Sky Pirates", shinobi: "Shinobi Crew", "blade-hunters": "Blade Hunters", guild: "Adventurers' Guild", kasanagi: "Kasanagi: The Seven Paths" };
 export const CHIBI_CHARACTERS = ["kai", "amara", "mateo", "tala", "priya", "lena", "rook", "isla", "bo", "juno", "rina", "taro", "noor", "bram", "lio", "vera", "sage", "brix", "pip", "mira", "ezra", "kofi", "awan", "saliha", "dumalag", "bantug", "aria", "landong", "ngilad", "karum", "ira", "vorak", "zeph", "datus"] as const;
 export type ChibiCharacter = (typeof CHIBI_CHARACTERS)[number];
-export const CHIBI_REACTIONS = ["cool", "powerup", "happy", "laughing", "love", "sad", "angry", "surprised"] as const;
+export const CHIBI_REACTIONS = ["cool", "powerup", "happy", "laughing", "giggle", "jiggle", "wink", "excited", "love", "shy", "sleepy", "confused", "sad", "scared", "angry", "surprised"] as const;
 export type ChibiReaction = (typeof CHIBI_REACTIONS)[number];
 export const CHIBI_VARIANTS = CHIBI_CHARACTERS.flatMap((c) => CHIBI_REACTIONS.map((r) => `${c}-${r}`));
 
-const SHARED = { ink: "#2B1B12", white: "#FFFFFF", blush: "#FF8FA3", heart: "#E8336D", tear: "#4FC3F7", fire: "#FF5A36", aura: "#FFC940", auraCore: "#FFF3B0" };
+const SHARED = { ink: "#2B1B12", white: "#FFFFFF", blush: "#FF8FA3", heart: "#E8336D", tear: "#4FC3F7", fire: "#FF5A36", aura: "#FFC940", auraCore: "#FFF3B0", star: "#FFC83D" };
 
 interface Character {
   name: string;
@@ -743,6 +743,25 @@ const blush: Layer[] = [
   { id: "blush-r", kind: "shape", shape: { type: "ellipse", cx: 42.5, cy: 34, rx: 2.6, ry: 1.5 }, fill: fill("blush"), opacity: 0.7 },
 ];
 
+/** Five-point star centred on (cx, cy). */
+function starPoints(cx: number, cy: number, outer: number, inner: number): string {
+  const pts: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 ? inner : outer;
+    pts.push(`${Math.round((cx + rad * Math.cos(a)) * 100) / 100} ${Math.round((cy + rad * Math.sin(a)) * 100) / 100}`);
+  }
+  return pts.join(" ");
+}
+
+/** A quick left-right shiver over `ms`, ending still. */
+function shiver(ms: number, amp: number, step = 50): [number, number][] {
+  const k: [number, number][] = [[0, 0]];
+  for (let t = step, i = 0; t < ms; t += step, i++) k.push([t, i % 2 ? amp : -amp]);
+  k.push([ms, 0]);
+  return k;
+}
+
 interface Reaction {
   label: string;
   face: Layer[];
@@ -836,6 +855,182 @@ function reaction(r: ChibiReaction): Reaction {
           { id: "burst", sound: "synth:kick", marker: "burst", gain: 0.8, params: { pitch: 0.8 } },
         ],
         reducedMotionFrame: 600,
+      };
+    case "giggle":
+      return {
+        label: "giggling with squeezed eyes",
+        face: [...blush, line("eye-l", "M23.5 29.5 Q26 27 28.5 29.5", 2), line("eye-r", "M35.5 29.5 Q38 27 40.5 29.5", 2), line("mouth", "M29.6 35.4 Q32 38.4 34.4 35.4")],
+        duration: 1200,
+        markers: [{ id: "he-1", at: 0 }, { id: "he-2", at: 140 }, { id: "he-3", at: 280 }],
+        tracks: [
+          track("char", "rotate", [[0, 0, "easeInOut"], [70, 3, "easeInOut"], [140, -3, "easeInOut"], [210, 3, "easeInOut"], [280, -3, "easeInOut"], [350, 2, "easeInOut"], [420, 0], [1200, 0]]),
+          track("char", "translateY", [[0, 0], [70, -1], [140, 0], [210, -1], [280, 0], [350, -1], [420, 0], [1200, 0]]),
+        ],
+        sounds: [
+          { id: "he-1", sound: "synth:pluck", marker: "he-1", gain: 0.45, params: { pitch: 2, decay: 0.3 } },
+          { id: "he-2", sound: "synth:pluck", marker: "he-2", gain: 0.45, params: { pitch: 2.25, decay: 0.3 } },
+          { id: "he-3", sound: "synth:pluck", marker: "he-3", gain: 0.45, params: { pitch: 2.5, decay: 0.3 } },
+        ],
+        reducedMotionFrame: 0,
+      };
+    case "jiggle":
+      return {
+        label: "jiggling like jelly",
+        face: [...blush, eye("eye-l", 26), eye("eye-r", 38), { id: "mouth", kind: "shape", shape: { type: "path", d: "M28.5 35 Q32 40 35.5 35 Z" }, fill: ink, stroke: ink, strokeWidth: 1.2, lineJoin: "round" }],
+        duration: 1200,
+        markers: [{ id: "boing", at: 0 }, { id: "wobble", at: 260 }],
+        tracks: [
+          track("char", "scaleY", [[0, 1, "easeOut"], [120, 0.86, "easeInOut"], [260, 1.1, "easeInOut"], [400, 0.94, "easeInOut"], [540, 1.04, "easeInOut"], [680, 0.98, "easeInOut"], [800, 1], [1200, 1]]),
+          track("char", "scaleX", [[0, 1, "easeOut"], [120, 1.12, "easeInOut"], [260, 0.92, "easeInOut"], [400, 1.05, "easeInOut"], [540, 0.97, "easeInOut"], [680, 1.01, "easeInOut"], [800, 1], [1200, 1]]),
+        ],
+        sounds: [
+          { id: "boing", sound: "synth:pop", marker: "boing", gain: 0.8, params: { pitch: 0.55, decay: 2 } },
+          { id: "wobble", sound: "synth:pop", marker: "wobble", gain: 0.5, params: { pitch: 0.8, decay: 1.4 } },
+        ],
+        reducedMotionFrame: 0,
+      };
+    case "wink":
+      return {
+        label: "winking with a sparkle",
+        face: [
+          ...blush,
+          eye("eye-l", 26),
+          eye("eye-r", 38),
+          line("mouth", "M29 36 Q32.5 38.4 35.6 35.2"),
+          { id: "wink-sparkle", kind: "shape", shape: { type: "polygon", points: starPoints(46, 22, 3.2, 1.2) }, fill: fill("star"), stroke: ink, strokeWidth: 0.8, lineJoin: "round", origin: [46, 22] },
+        ],
+        duration: 1400,
+        markers: [{ id: "ting", at: 300 }],
+        tracks: [
+          track("eye-r", "scaleY", [[0, 1], [200, 1, "easeIn"], [300, 0.12, "easeOut"], [650, 0.12, "easeIn"], [760, 1], [1400, 1]]),
+          track("wink-sparkle", "opacity", [[0, 0], [280, 0, "easeOut"], [360, 1], [600, 1, "easeIn"], [760, 0], [1400, 0]]),
+          track("wink-sparkle", "scale", [[0, 0.3], [280, 0.3, "easeOut"], [420, 1.2, "easeInOut"], [600, 1], [760, 0.3], [1400, 0.3]]),
+          track("char", "rotate", [[0, 0], [200, 0, "easeOut"], [320, 4, "easeInOut"], [760, 0], [1400, 0]]),
+        ],
+        sounds: [{ id: "ting", sound: "synth:chime", marker: "ting", gain: 0.55, params: { pitch: 2 }, panFrom: "wink-sparkle" }],
+        reducedMotionFrame: 400,
+      };
+    case "excited":
+      return {
+        label: "bouncing with star eyes",
+        face: [
+          ...blush,
+          { id: "eye-l", kind: "shape", shape: { type: "polygon", points: starPoints(26, 29, 4.4, 1.9) }, fill: fill("star"), stroke: ink, strokeWidth: 1.2, lineJoin: "round", origin: [26, 29] },
+          { id: "eye-r", kind: "shape", shape: { type: "polygon", points: starPoints(38, 29, 4.4, 1.9) }, fill: fill("star"), stroke: ink, strokeWidth: 1.2, lineJoin: "round", origin: [38, 29] },
+          { id: "mouth", kind: "shape", shape: { type: "path", d: "M28 35 Q32 40.5 36 35 Z" }, fill: ink, stroke: ink, strokeWidth: 1.2, lineJoin: "round" },
+        ],
+        duration: 1200,
+        markers: [{ id: "yay", at: 0 }, { id: "land", at: 300 }],
+        tracks: [
+          track("char", "translateY", [[0, 0, "easeOut"], [150, -5, "easeIn"], [300, 0, "easeOut"], [450, -5, "easeIn"], [600, 0], [1200, 0]]),
+          track("eye-l", "scale", [[0, 1, "easeOut"], [150, 1.25, "easeInOut"], [300, 1, "easeOut"], [450, 1.25, "easeInOut"], [600, 1], [1200, 1]]),
+          track("eye-r", "scale", [[0, 1, "easeOut"], [150, 1.25, "easeInOut"], [300, 1, "easeOut"], [450, 1.25, "easeInOut"], [600, 1], [1200, 1]]),
+        ],
+        sounds: [
+          { id: "yay", sound: "synth:notify", marker: "yay", gain: 0.6, params: { pitch: 1.2 } },
+          { id: "land", sound: "synth:chime", marker: "land", gain: 0.45, params: { pitch: 1.5 } },
+        ],
+        reducedMotionFrame: 150,
+      };
+    case "shy":
+      return {
+        label: "blushing shyly",
+        face: [
+          { id: "shy-blush-l", kind: "shape", shape: { type: "ellipse", cx: 21, cy: 33.5, rx: 3.6, ry: 2 }, fill: fill("blush") },
+          { id: "shy-blush-r", kind: "shape", shape: { type: "ellipse", cx: 43, cy: 33.5, rx: 3.6, ry: 2 }, fill: fill("blush") },
+          { id: "eye-l", kind: "shape", shape: { type: "ellipse", cx: 25, cy: 30.2, rx: 2.1, ry: 2.7 }, fill: ink },
+          { id: "eye-r", kind: "shape", shape: { type: "ellipse", cx: 37, cy: 30.2, rx: 2.1, ry: 2.7 }, fill: ink },
+          line("mouth", "M29.5 36.5 Q30.8 35.5 32 36.5 Q33.2 37.5 34.5 36.5", 1.6),
+        ],
+        duration: 1600,
+        markers: [{ id: "aww", at: 200 }],
+        tracks: [
+          track("char", "rotate", [[0, 0, "easeInOut"], [500, -4, "easeInOut"], [1100, -4, "easeInOut"], [1600, 0]]),
+          track("shy-blush-l", "opacity", [[0, 0.45, "easeInOut"], [500, 1, "easeInOut"], [1100, 1, "easeInOut"], [1600, 0.45]]),
+          track("shy-blush-r", "opacity", [[0, 0.45, "easeInOut"], [500, 1, "easeInOut"], [1100, 1, "easeInOut"], [1600, 0.45]]),
+        ],
+        sounds: [{ id: "aww", sound: "synth:bell", marker: "aww", gain: 0.35, params: { pitch: 1.6, decay: 0.6 } }],
+        reducedMotionFrame: 600,
+      };
+    case "sleepy":
+      return {
+        label: "dozing off with drifting Zs",
+        face: [
+          line("eye-l", "M23.5 29.5 Q26 31.6 28.5 29.5", 2),
+          line("eye-r", "M35.5 29.5 Q38 31.6 40.5 29.5", 2),
+          { id: "mouth", kind: "shape", shape: { type: "ellipse", cx: 32, cy: 37, rx: 1.4, ry: 1.7 }, fill: ink, origin: [32, 37] },
+          {
+            id: "zz",
+            kind: "group",
+            origin: [47, 14],
+            children: [
+              { id: "z-big", kind: "shape", shape: { type: "path", d: "M44 12 H49 L44 17 H49" }, fill: "none", stroke: ink, strokeWidth: 1.6, lineCap: "round", lineJoin: "round" },
+              { id: "z-small", kind: "shape", shape: { type: "path", d: "M51 5 H54 L51 8 H54" }, fill: "none", stroke: ink, strokeWidth: 1.3, lineCap: "round", lineJoin: "round" },
+            ],
+          },
+        ],
+        duration: 2400,
+        markers: [{ id: "breath", at: 0 }],
+        tracks: [
+          track("char", "translateY", [[0, 0, "easeInOut"], [1200, 1.2, "easeInOut"], [2400, 0]]),
+          track("char", "rotate", [[0, 0, "easeInOut"], [1200, -3, "easeInOut"], [2400, 0]]),
+          track("mouth", "scale", [[0, 0.8, "easeInOut"], [1200, 1.15, "easeInOut"], [2400, 0.8]]),
+          track("zz", "translateY", [[0, 4], [2400, -5]]),
+          track("zz", "opacity", [[0, 0, "easeOut"], [400, 1], [1800, 1, "easeIn"], [2200, 0], [2400, 0]]),
+        ],
+        sounds: [{ id: "breath", sound: "synth:whoosh", marker: "breath", gain: 0.35, params: { pitch: 0.45, decay: 2.5 } }],
+        reducedMotionFrame: 1200,
+      };
+    case "confused":
+      return {
+        label: "tilting their head, confused",
+        face: [
+          eye("eye-l", 26),
+          eye("eye-r", 38),
+          line("brow-l", "M23 24.6 Q25.5 22.4 28.5 23.8", 1.6),
+          line("brow-r", "M35.5 25.6 L41 25.2", 1.6),
+          line("mouth", "M29 37 Q30.5 35.8 32 37 Q33.5 38.2 35 37", 1.6),
+          {
+            id: "question",
+            kind: "group",
+            origin: [48, 12],
+            children: [
+              { id: "question-hook", kind: "shape", shape: { type: "path", d: "M45 9.5 Q45 6 48 6 Q51 6 51 9 Q51 11 48.5 12 L48.5 14" }, fill: "none", stroke: ink, strokeWidth: 2, lineCap: "round", lineJoin: "round" },
+              { id: "question-dot", kind: "shape", shape: { type: "circle", cx: 48.5, cy: 17, r: 1.2 }, fill: ink },
+            ],
+          },
+        ],
+        duration: 1600,
+        markers: [{ id: "huh-1", at: 200 }, { id: "huh-2", at: 350 }],
+        tracks: [
+          track("char", "rotate", [[0, 0, "easeInOut"], [300, 8, "easeInOut"], [1200, 8, "easeInOut"], [1500, 0], [1600, 0]]),
+          track("question", "scale", [[0, 0.4], [200, 0.4, "easeOut"], [350, 1.15, "easeInOut"], [500, 1], [1600, 1]]),
+          track("question", "opacity", [[0, 0], [200, 0, "easeOut"], [300, 1], [1300, 1, "easeIn"], [1500, 0], [1600, 0]]),
+        ],
+        sounds: [
+          { id: "huh-1", sound: "synth:pluck", marker: "huh-1", gain: 0.5, params: { pitch: 0.9, decay: 0.5 }, panFrom: "question" },
+          { id: "huh-2", sound: "synth:pluck", marker: "huh-2", gain: 0.5, params: { pitch: 1.35, decay: 0.6 }, panFrom: "question" },
+        ],
+        reducedMotionFrame: 500,
+      };
+    case "scared":
+      return {
+        label: "trembling and scared",
+        face: [
+          { id: "eye-l", kind: "group", origin: [26, 29], children: [circle("eye-l-white", 26, 29, 3.6, "white", true), { id: "eye-l-pupil", kind: "shape", shape: { type: "circle", cx: 26, cy: 29, r: 1.2 }, fill: ink }] },
+          { id: "eye-r", kind: "group", origin: [38, 29], children: [circle("eye-r-white", 38, 29, 3.6, "white", true), { id: "eye-r-pupil", kind: "shape", shape: { type: "circle", cx: 38, cy: 29, r: 1.2 }, fill: ink }] },
+          line("mouth", "M28.5 37 L30 35.8 L31.5 37 L33 35.8 L34.5 37 L36 35.8", 1.6),
+          { id: "sweat", kind: "shape", shape: { type: "path", d: "M19.5 17 Q17.5 20.5 19.5 22 Q21.5 20.5 19.5 17 Z" }, fill: fill("tear"), stroke: ink, strokeWidth: 0.8 },
+        ],
+        duration: 1200,
+        markers: [{ id: "gasp", at: 0 }],
+        tracks: [
+          track("char", "translateX", shiver(1000, 0.8)),
+          track("sweat", "translateY", [[0, 0], [200, 0, "easeIn"], [900, 6], [1200, 6]]),
+          track("sweat", "opacity", [[0, 0, "easeOut"], [200, 1], [800, 1, "easeIn"], [1000, 0], [1200, 0]]),
+        ],
+        sounds: [{ id: "gasp", sound: "synth:whoosh", marker: "gasp", gain: 0.5, params: { pitch: 1.8, decay: 0.6 } }],
+        reducedMotionFrame: 400,
       };
     case "happy":
       return {
@@ -932,7 +1127,8 @@ function reaction(r: ChibiReaction): Reaction {
   }
 }
 
-const REACTION_TITLE: Record<ChibiReaction, string> = { cool: "Cool", powerup: "Power-Up", happy: "Happy", laughing: "Laughing", love: "In Love", sad: "Sad", angry: "Angry", surprised: "Surprised" };
+const REACTION_TITLE: Record<ChibiReaction, string> = { cool: "Cool", powerup: "Power-Up", happy: "Happy", laughing: "Laughing", giggle: "Giggle", jiggle: "Jiggle", wink: "Wink", excited: "Excited", love: "In Love", shy: "Shy", sleepy: "Sleepy", confused: "Confused", sad: "Sad", scared: "Scared", angry: "Angry", surprised: "Surprised" };
+export const CHIBI_REACTION_TITLES = REACTION_TITLE;
 
 export function buildChibi({ character, reaction: r }: { character: ChibiCharacter; reaction: ChibiReaction }): AssetDefinition {
   const c = CHARACTERS[character];
