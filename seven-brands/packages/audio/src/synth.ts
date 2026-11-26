@@ -112,13 +112,22 @@ export const PRESETS: Record<string, SynthPreset> = {
   heartbeat: {
     id: "heartbeat",
     label: "Heartbeat",
-    description: "Two soft low thumps (lub-dub)",
+    description: "Lub-dub: low thumps for good speakers, plus a soft knock that phone and laptop speakers can play",
     length: 0.5,
-    render: ({ pitch, decay }, sr) => {
+    render: ({ pitch, decay, seed }, sr) => {
       const n = samples(0.5 * decay, sr);
       const out = new Float32Array(n);
-      add(out, glide(samples(0.2, sr), sr, 90 * pitch, 45 * pitch, 0.03, 0.05 * decay, 0.004), 0, 1);
-      add(out, glide(samples(0.2, sr), sr, 80 * pitch, 40 * pitch, 0.03, 0.045 * decay, 0.004), Math.round(0.18 * sr), 0.75);
+      // A beat = sub thump (felt on headphones/speakers) + a 170–260 Hz knock and a soft tick (heard on small speakers).
+      const beat = (at: number, f: number, gain: number, s: number) => {
+        const start = Math.round(at * sr);
+        add(out, glide(samples(0.2, sr), sr, f * pitch, (f / 2) * pitch, 0.03, 0.05 * decay, 0.004), start, gain);
+        add(out, glide(samples(0.12, sr), sr, 2.9 * f * pitch, 1.9 * f * pitch, 0.02, 0.028 * decay, 0.002), start, 0.8 * gain);
+        const tick = noise(samples(0.03, sr), s);
+        for (let i = 0; i < tick.length; i++) tick[i]! *= expEnv(i / sr, 0.006 * decay);
+        add(out, applyBiquad(tick, biquad("lowpass", 1400 * pitch, 0.8, sr)), start, 0.45 * gain);
+      };
+      beat(0, 90, 1, seed);
+      beat(0.18, 80, 0.75, seed + 1);
       return out;
     },
   },
@@ -180,9 +189,16 @@ export const PRESETS: Record<string, SynthPreset> = {
   kick: {
     id: "kick",
     label: "Kick",
-    description: "Punchy kick drum",
+    description: "Punchy kick drum, with a beater click and body tone so small speakers can play it too",
     length: 0.35,
-    render: ({ pitch, decay }, sr) => glide(samples(0.35 * decay, sr), sr, 150 * pitch, 45 * pitch, 0.04, 0.09 * decay, 0.001),
+    render: ({ pitch, decay, seed }, sr) => {
+      const n = samples(0.35 * decay, sr);
+      const out = glide(n, sr, 150 * pitch, 45 * pitch, 0.04, 0.09 * decay, 0.001);
+      add(out, glide(samples(0.1, sr), sr, 420 * pitch, 160 * pitch, 0.015, 0.03 * decay, 0.001), 0, 0.5);
+      const click = noise(samples(0.02, sr), seed);
+      for (let i = 0; i < click.length; i++) click[i]! *= expEnv(i / sr, 0.0025 * decay);
+      return add(out, applyBiquad(click, biquad("bandpass", 3200 * pitch, 0.9, sr)), 0, 0.5);
+    },
   },
   shutter: {
     id: "shutter",

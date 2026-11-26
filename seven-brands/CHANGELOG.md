@@ -2,6 +2,11 @@
 
 All notable changes to the Seven Brands platform. Dates are UTC.
 
+## [0.6.1] — 2026-11-26 — Heartbeat and kick audible on phones
+
+### Fixed
+- The **heartbeat** (Heart Eyes, every chibi "In Love", pulsing hearts) and **kick** (Angry faces and characters, drum glyphs) were almost pure bass (45–195 Hz), which phone and laptop speakers can't reproduce, so they sounded silent there. Both presets now add an upper layer: a 170–260 Hz knock and soft tick for the heartbeat, a body tone and beater click for the kick. Measured share of energy above 200 Hz: heartbeat 4% → ~25%, kick (low pitch) 7% → 17%. The bass is kept for headphones and speakers.
+
 ## [0.6.0] — 2026-11-26 — Gradients and clay 3D
 
 ### Added
