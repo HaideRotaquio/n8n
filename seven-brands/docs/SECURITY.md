@@ -11,6 +11,7 @@
 | RBAC | 7 roles × 27 permissions; brand-scoped grants never leak to other brands or company-wide actions | core.test, auth.test, e2e |
 | Brand isolation (API) | Out-of-scope brands return 404, identical to missing | e2e |
 | CSRF | SameSite cookies + Origin check on API writes; Next.js server actions verify origin | e2e |
+| CORS | No credentialed CORS anywhere. Only cookie-free public data sends `Access-Control-Allow-Origin: *` (icon search/details, license verification). Account data, sessions, downloads, the files API and all admin APIs send no CORS headers, so other sites' scripts can't read them; foreign-origin sign-ins, downloads and admin writes are refused (403) | e2e: store "CORS…", admin cors.spec |
 | Input validation | Zod on all writes; strict patch schema rejects unknown fields; font stacks and colors restricted to safe patterns (no CSS injection) | core.test, e2e |
 | Audit trail | Every admin write logs actor, IP, user agent, before/after in the same transaction; DB trigger makes the log append-only | db.test |
 | Download authorization | fs: HMAC-SHA256 signed, expiring URLs with constant-time verification; S3/R2: presigned URLs; expiry clamped 60–3600 s | storage.test |

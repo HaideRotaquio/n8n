@@ -198,6 +198,34 @@ test("the built CLI and its MCP server install a purchased icon into a project",
   }
 });
 
+test("CORS: other websites can read only public catalog data, never signed-in data, and can't act as a user", async ({ playwright }) => {
+  const EVIL = "https://evil.example";
+  const api = await playwright.request.newContext({ baseURL: `http://localhost:${new URL(STORE_URL).port}`, extraHTTPHeaders: { origin: EVIL } });
+  try {
+    // Public, cookie-free data is readable from anywhere (that's the point of a public API), but never with credentials.
+    const pub = await api.get("/api/v1/icons?q=heart");
+    expect(pub.headers()["access-control-allow-origin"]).toBe("*");
+    expect(pub.headers()["access-control-allow-credentials"]).toBeUndefined();
+    // Anything tied to a signed-in customer carries no CORS header, so another site's scripts can't read it.
+    for (const path of ["/account/data", "/account", "/api/auth/get-session"]) {
+      const r = await api.get(path, { maxRedirects: 0 });
+      expect(r.headers()["access-control-allow-origin"], path).toBeUndefined();
+    }
+    // Preflights for state-changing routes are not granted to foreign origins.
+    for (const path of ["/api/downloads", "/api/v1/icons/beating-heart/files", "/api/auth/sign-in/email"]) {
+      const r = await api.fetch(path, { method: "OPTIONS", headers: { "access-control-request-method": "POST", "access-control-request-headers": "content-type,authorization" } });
+      expect(r.headers()["access-control-allow-origin"], path).toBeUndefined();
+    }
+    // A foreign site can't sign a visitor in or out, or start a download, even with a real form post.
+    const signIn = await api.post("/api/auth/sign-in/email", { data: { email: BUYER.email, password: BUYER.password } });
+    expect(signIn.status()).toBe(403);
+    const dl = await api.post("/api/downloads", { form: { entitlementId: "x", assetId: "y" } });
+    expect([401, 403]).toContain(dl.status());
+  } finally {
+    await api.dispose();
+  }
+});
+
 test("another customer can't use someone else's entitlement, and sessions don't cross brands", async ({ page }) => {
   await signUp(page, OTHER, "/account");
   await expect(page.getByText("Nothing here yet")).toBeVisible();
